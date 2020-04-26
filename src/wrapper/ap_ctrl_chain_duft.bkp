@@ -1,0 +1,153 @@
+`timescale 1ns / 100ps
+`include "./prewrapped_design.v"
+
+module DUFT_ap_ctrl_chain(
+  input [31:0] addr,
+  input [31:0] wr_data,
+  input        rd_wr, // 1 for read, 0 for write
+
+  output [31:0] ap_return,
+  input        ap_rst,
+  input        ap_start,
+  input        ap_continue,
+  input        ap_ce,
+  output reg   ap_idle,
+  output reg   ap_ready,
+  output reg   ap_done,
+
+  input ap_clk
+);
+// datapath
+// input register
+reg [31:0] core_addr;
+reg [31:0] core_wr_data;
+reg        core_rd_wr;
+reg        reg_en;
+
+always @(posedge ap_clk) begin
+  if(ap_rst) begin
+    core_addr <= 32'hFFFFFFFF;
+    core_wr_data <= 0;
+    core_rd_wr <= 0;
+  end
+  else if(reg_en) begin
+    core_addr <= addr;
+    core_wr_data <= wr_data;
+    core_rd_wr <= rd_wr;
+  end
+end
+
+wire [31:0] rd_addr;
+wire [31:0] wr_addr;
+
+prewrapped core_DUFT (
+  .clk(ap_clk),
+  .reset(ap_rst),
+  .axi_rd_addr(rd_addr),
+  .axi_wr_addr(wr_addr),
+  .axi_rd_msg(ap_return),
+  .axi_wr_msg(core_wr_data)
+);
+
+// control logic
+// read it combinational, write needs 1 cycle
+reg rden;
+reg wren;
+assign rd_addr = (rden && ap_ce) ? core_addr : 32'hFFFFFFFF;
+assign wr_addr = (wren && ap_ce) ? core_addr : 32'hFFFFFFFF;
+wire rd_valid;
+wire wr_valid;
+assign rd_valid = (ap_start) && core_rd_wr;
+assign wr_valid = (ap_start) && !core_rd_wr;
+
+
+// state machine
+localparam IDLE     = 3'd0;
+localparam RD_DONE  = 3'd1;
+localparam WR_ING   = 3'd2;
+localparam WR_DONE  = 3'd3;
+
+localparam y = 1'b1;
+localparam n = 1'b0;
+
+reg [2:0] current_state;
+reg [2:0] next_state;
+
+always @(posedge ap_clk ) begin
+  if (ap_rst)
+    current_state <= IDLE;
+  else if (!ap_ce)
+    current_state <= current_state;
+  else
+    current_state <= next_state;
+end
+
+always @(*) begin
+  case (current_state)
+    IDLE:
+      if (rd_valid)
+        next_state =  RD_DONE;
+      else if (wr_valid)
+        next_state = WR_ING;
+      else 
+        next_state = IDLE;
+    RD_DONE:
+      if(!ap_continue)
+        next_state = RD_DONE;
+      else if(rd_valid)
+        next_state = RD_DONE;
+      else
+        next_state = IDLE;
+    WR_ING:
+      next_state = WR_DONE;
+    WR_DONE:
+      if(!ap_continue)
+        next_state = WR_DONE;
+      else if(wr_valid)
+        next_state = WR_ING;
+      else
+        next_state = IDLE;    
+    default: 
+      next_state = IDLE;
+  endcase
+end
+
+task cbout;
+  input c_ap_idle;
+  input c_ap_ready;
+  input c_ap_done;
+  input c_rden;
+  input c_wren;
+  input c_reg_en;
+  begin
+    ap_idle = c_ap_idle;
+    ap_ready = c_ap_ready;
+    ap_done = c_ap_done;
+    rden = c_rden;
+    wren = c_wren;
+    reg_en = c_reg_en;
+  end
+endtask
+
+always @(*) begin
+  case (current_state)
+    //                                ap    ap    ap    rd   wr  reg
+    //                                idle  rdy   done  en   en  en
+    IDLE: 
+      if(ap_start)              cbout(n,    y,    n,    n,   n,  y);
+      else if (ap_rst)          cbout(n,    n,    n,    n,   n,  n);
+      else                      cbout(y,    y,    n,    n,   n,  y);
+    RD_DONE:
+      if(!ap_continue)          cbout(n,    n,    n,    y,   n,  n);
+      else if (rd_valid)        cbout(n,    y,    y,    y,   n,  y);
+      else                      cbout(n,    y,    y,    y,   n,  n);
+    WR_ING:                     cbout(n,    n,    n,    n,   y,  n);
+    WR_DONE:
+      if(!ap_continue)          cbout(n,    n,    n,    n,   n,  n);
+      else if(wr_valid)         cbout(n,    y,    y,    n,   n,  y);
+      else                      cbout(n,    y,    y,    n,   n,  n);
+    default:                    cbout(n,    n,    n,    n,   n,  n);
+  endcase
+end
+
+endmodule // DUFT_ap_ctrl_hs

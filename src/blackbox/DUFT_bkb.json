@@ -1,0 +1,78 @@
+{
+  "c_function_name" : "DUFT_ap_ctrl_chain",
+  "rtl_top_module_name" : "DUFT_ap_ctrl_chain",
+  
+  "c_files" : [
+    {"c_file" : "../src/beh/DUFT_ap_ctrl_chain.c","cflag" : "-I../src/lib -I../src/inc -I../src/beh"},
+    {"c_file" : "../src/beh/DUT.c","cflag" : "-I../src/lib -I../src/inc -I../src/beh"}
+  ],
+  
+  "rtl_files" : [
+    "~/ap_DUFT/src/wrapper/ap_ctrl_chain_duft.v",
+    "~/ap_DUFT/src/wrapper/dut_io_unpack.v",
+    "~/ap_DUFT/src/wrapper/prewrapped_design.v",
+    "~/ap_DUFT/src/wrapper/prewrapper_ctrl.v",
+    "~/ap_DUFT/src/wrapper/prewrapper_datapath.v",
+    "~/ap_DUFT/src/wrapper/prewrapper.v",
+    "~/ap_DUFT/src/lib_rtl/counters.v",
+    "~/ap_DUFT/src/lib_rtl/mem.v",
+    "~/ap_DUFT/src/lib_rtl/reg_and_regfile.v",
+    "~/ap_DUFT/src/lib_rtl/ScanReg.v",
+    "~/ap_DUFT/src/duft_rtl/dft_ctrl.v",
+    "~/ap_DUFT/src/duft_rtl/dft_datapath.v",
+    "~/ap_DUFT/src/duft_rtl/dut_ctrl.v",
+    "~/ap_DUFT/src/duft_rtl/dut_datapath.v",
+    "~/ap_DUFT/src/duft_rtl/dut.v",
+    "~/ap_DUFT/src/duft_rtl/duft_top.v",
+    "~/ap_DUFT/src/duft_rtl/SIPObuf/SIPObuf.v",
+    "~/ap_DUFT/src/duft_rtl/SIPObuf/SIPObuf_ctrl.v",
+    "~/ap_DUFT/src/duft_rtl/SIPObuf/SIPObuf_datapath.v"
+  ],
+  
+  "c_parameters" : [
+    {
+      "c_name" : "addr",
+      "c_port_direction" : "in",
+      "rtl_ports" : {"data_read_in" : "addr"}
+    },
+    {
+      "c_name" : "wr_data",
+      "c_port_direction" : "in",
+      "rtl_ports" : {"data_read_in" : "wr_data"}
+    },
+    {
+      "c_name" : "rd_wr",
+      "c_port_direction" : "in",
+      "rtl_ports" : {"data_read_in" : "rd_wr"}
+    }
+  ],
+  
+  "c_return" : {
+    "c_port_direction" : "out",
+    "rtl_ports" : {"data_write_out" : "ap_return"}
+  },
+
+  "rtl_common_signal" : {
+    "module_clock" : "ap_clk",
+    "module_reset" : "ap_rst",
+    "module_clock_enable" : "ap_ce",
+    "ap_ctrl_chain_protocol_idle" : "ap_idle",
+    "ap_ctrl_chain_protocol_start" : "ap_start",
+    "ap_ctrl_chain_protocol_ready" : "ap_ready",
+    "ap_ctrl_chain_protocol_done" : "ap_done",
+    "ap_ctrl_chain_protocol_continue" : "ap_continue"
+  },
+
+  "rtl_performance" : {
+    "latency" : "2",
+    "II" : "0"
+  },
+  
+  "rtl_resource_usage" : {
+    "FF" : "0",
+    "LUT" : "0",
+    "BRAM" : "0",
+    "URAM" : "0",
+    "DSP" : "0"
+  }
+}
