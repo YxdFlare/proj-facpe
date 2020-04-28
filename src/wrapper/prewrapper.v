@@ -1,4 +1,6 @@
 `timescale 1ns / 100ps
+`ifndef AXI_PREWRAPPER
+`define AXI_PREWRAPPER
 //----------------------------------------------------
 // top-level
 //----------------------------------------------------
@@ -128,6 +130,8 @@ module axi_prewrapper
   );
     
 endmodule // axi_prewrapper
+
+`endif
 
 
 

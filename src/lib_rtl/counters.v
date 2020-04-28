@@ -1,4 +1,7 @@
 `timescale 1ns / 100ps
+`ifndef COUNTERS
+`define COUNTERS
+
 module arbitrary_counter32(
   input [31:0] cnt_max,
   input [31:0] cnt_min,
@@ -51,3 +54,5 @@ parameter max = 0
   end
   assign ov  = (value == max) ? 1'b1 : 1'b0;
 endmodule
+
+`endif

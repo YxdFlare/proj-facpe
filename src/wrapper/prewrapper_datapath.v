@@ -1,4 +1,6 @@
 `timescale 1ns / 100ps
+`ifndef PREWRAPPER_DPATH
+`define PREWRAPPER_DPATH
 //----------------------------------------------------
 // datapath
 //----------------------------------------------------
@@ -205,3 +207,5 @@ module axi_prewrapper_datapath
   );
 
 endmodule // axi_prewarpper_datapath
+
+`endif

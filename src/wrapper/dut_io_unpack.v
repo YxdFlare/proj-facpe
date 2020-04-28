@@ -1,4 +1,6 @@
 `timescale 1ns / 100ps
+`ifndef DUT_IOUNPACK
+`define DUT_IOUNPACK
 `include "./reg_and_regfile.v"
 
 module dut_io_unpack
@@ -60,3 +62,5 @@ module dut_io_unpack
   );
 
 endmodule // dut_io_unpack
+
+`endif

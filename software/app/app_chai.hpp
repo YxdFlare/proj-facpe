@@ -1,0 +1,1 @@
+int dataproc_chai(char* dirpath, char* prototxt, char* caffemodel, unsigned int* img_path1, unsigned int* img_path2, float* final_results);

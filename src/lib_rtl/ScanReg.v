@@ -1,4 +1,6 @@
 `timescale 1ns/100ps 
+`ifndef SCANREG
+`define SCANREG
 module ScanReg (
 	input d,
 	input sin,
@@ -97,3 +99,4 @@ module ScanReg40 (
 	assign q = q_REG;
 	assign sout = q_REG[0];
 endmodule
+`endif

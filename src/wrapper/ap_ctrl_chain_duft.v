@@ -1,4 +1,6 @@
 `timescale 1ns / 100ps
+`ifndef AP_CTRL_CHAIN_DUFT
+`define AP_CTRL_CHAIN_DUFT
 `include "./prewrapped_design.v"
 
 module DUFT_ap_ctrl_chain(
@@ -171,4 +173,6 @@ always @(*) begin
   endcase
 end
 
-endmodule // DUFT_ap_ctrl_hs
+endmodule // DUFT_ap_ctrl_chain
+
+`endif

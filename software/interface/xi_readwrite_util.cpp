@@ -94,9 +94,68 @@ void Trim2FixedPoint(float &data, const int bw, const int fl, int round_floor_fl
 
 }
 
+int casttoBuffptr(unsigned int *img_path, IO_DATA_TYPE *buff_ptr, int height, int width, int img_channel)
+{
+	cv::Mat frame;
+
+	if(img_channel == 3)
+    frame = Mat(height,width,CV_32UC3,(void*)img_path);
+  else {
+    std :: cout << "[ERROR] Only support image with 3 channels - But img_channel is set to" << img_channel << std :: endl;
+    return -1;
+  }
+	if(!frame.data)
+	{
+		std :: cout << "[ERROR] Image read failed - " << img_path << std :: endl;
+		return -1;
+	}
+	else
+	{
+		std :: cout << "[IMRDx] Image read : " << img_path << std :: endl;
+	}
+
+  cv::Mat cv_img[1];
+  frame.copyTo(cv_img[0]);
+
+	//float pixel;
+	uchar pixel;
+	int input_index=0;
+	float float_val;
+	short fxval;
+	int mean_idx = 0;
+
+	for (int h = 0; h < height; ++h)
+	{
+		const uchar* ptr = cv_img[0].ptr<uchar>(h);//data;
+		int img_index = 0;
+		for (int w = 0; w < width; ++w)
+		{
+			for (int ch = 0; ch < img_channel; ++ch)
+			{
+				pixel = ptr[img_index++];
+
+				short pixel1 = (short)pixel << fbits_input;
+
+				mean_idx = (ch * resize_h + h + h_off) * resize_w + w + w_off;
+				float float_mean = mean_ptr[mean_idx];
+
+				IO_DATA_TYPE ival = (IO_DATA_TYPE)float_mean;
+				IO_DATA_TYPE mean_fxval = ConvertToFP(float_mean, ival, fbits_input);
+				fxval = pixel1 - mean_fxval;
+
+				buff_ptr[input_index] = fxval;
+
+				input_index++;
+			}// Channels
+		}// Image width
+
+	}// Image Height
+
+	return 0;
+}
+
 int loadPixelMeanSubtractedDatatoBuffptr(const char *img_path, IO_DATA_TYPE *buff_ptr, int height, int width, int img_channel, int resize_h, int resize_w, int fbits_input, char *mean_path)
 {
-
 	cv::Mat frame;
 
 	frame = cv::imread(img_path, 1);
@@ -597,7 +656,7 @@ int loadMeanSubtractedDatafromBuffptr(std::vector<void *> normalizeInput, IO_DAT
 
 //# Input Read
 int inputNormalization(std::vector<void *>input, int resize_h, int resize_w, 
-					char *img_path1, char *img_path2, bool inp_mode, 
+					char *img_path1, char *img_path2, int inp_mode, 
 					float *mean_ptr, float *var_ptr,
 					int numImg_to_process, io_layer_info io_layer_info_ptr)
 {
@@ -682,6 +741,21 @@ int inputNormalization(std::vector<void *>input, int resize_h, int resize_w,
 				else
 				{
 					status = loadPixelMeanSubtractedDatatoBuffptr(img_path2, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel, resize_h, resize_w, inp_fbits, mean_path);
+				}
+			}
+		}
+
+    if(inp_mode==3)
+		{
+			for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++)
+			{
+				if (batch_id == 0)
+				{
+					status = casttoBuffptr(img_path1, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel);
+				}
+				else
+				{
+					status = casttoBuffptr(img_path2, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel);
 				}
 			}
 		}

@@ -1,4 +1,6 @@
 `timescale 1ns / 100ps
+`ifndef REG_REGFILE
+`define REG_REGFILE
 module BSRSW_RF32 // single tri-read single write 32-bit register file with biased address
 #(
   parameter base_addr = 32'd0,
@@ -213,3 +215,5 @@ module buf_word_contract // combiantional read
   
 
 endmodule // buf_word_contract
+
+`endif

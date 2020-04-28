@@ -1,4 +1,6 @@
 `timescale 1ns / 100ps
+`ifndef PREWRAPPED
+`define PREWRAPPED
 `include "./prewrapper.v"
 `include "./duft_top.v"
 
@@ -84,3 +86,5 @@ module prewrapped(
 
 
 endmodule // 
+
+`endif

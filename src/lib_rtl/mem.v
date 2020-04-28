@@ -1,5 +1,6 @@
 `timescale 1ns / 100ps
-
+`ifndef MEM
+`define MEM
 module mem_256B(
   input [31:0] din,
   output [31:0] dout,
@@ -30,3 +31,5 @@ module mem_256B(
       mem[addr] <= din;
 
 endmodule // mem_256B (64 * 4B)
+
+`endif

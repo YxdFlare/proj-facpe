@@ -60,11 +60,4 @@ void batch_encode(u32 collected_states[MAX_LATENCY*DUMP_NBR], u32 img_set[(MAX_L
     img_set_ptr = img_set + (cycle_idx - 1) * SIZE * SIZE * 3;
     encode(prev,current,img_set_ptr);
   }
-  #ifndef __SYNTHESIS__
-    printf("\nIN ENCODE:\n================\n");
-    for (int i = 0; i < MAX_LATENCY-1; i++) {
-      printf("%d->%d\n",i,i+1);
-      print_array3d(img_set + i*SIZE*SIZE*CH_NBR,SIZE,SIZE,CH_NBR);
-    }            
-  #endif
 }

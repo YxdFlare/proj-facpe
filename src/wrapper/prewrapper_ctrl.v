@@ -1,4 +1,6 @@
 `timescale 1ns / 100ps
+`ifndef PREWRAPPER_CTRL
+`define PREWARPPER_CTRL
 //----------------------------------------------------
 // control unit
 //----------------------------------------------------
