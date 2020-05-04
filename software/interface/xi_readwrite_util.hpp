@@ -43,9 +43,14 @@
 #ifndef _XI_READWRITE_UTIL_HPP_
 #define _XI_READWRITE_UTIL_HPP_
 
-int inputNormalization(std::vector<void *>input, int resize_h, int resize_w, char *img_path1, char *img_path2, bool inp_mode, 
+int inputNormalization(std::vector<void *>input, int resize_h, int resize_w, char *img_path1, char *img_path2, int inp_mode, 
 		float *mean_ptr, float *var_ptr,
 		int numImg_to_process, io_layer_info io_layer_info_ptr);
+    
+int inputNormalization(std::vector<void *>input, int resize_h, int resize_w, 
+					unsigned int *img_path1, unsigned int *img_path2, int inp_mode, 
+					float *mean_ptr, float *var_ptr,
+					int numImg_to_process, io_layer_info io_layer_info_ptr);
 
 int outputUnpack(void *output, void *output_unpack[XBATCH_SIZE], int kernType, int outputSize, int en_batch_size_one);
 

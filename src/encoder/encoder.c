@@ -57,7 +57,7 @@ void batch_encode(u32 collected_states[MAX_LATENCY*DUMP_NBR], u32 img_set[(MAX_L
   for(cycle_idx = 1; cycle_idx < MAX_LATENCY; cycle_idx++) {
     reform(&collected_states[cycle_idx-1],prev);
     reform(&collected_states[cycle_idx],current);
-    img_set_ptr = img_set + (cycle_idx - 1) * SIZE * SIZE * 3;
+    img_set_ptr = img_set + (cycle_idx - 1) * SIZE * SIZE * CH_NBR;
     encode(prev,current,img_set_ptr);
   }
 }

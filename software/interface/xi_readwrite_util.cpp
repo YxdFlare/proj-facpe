@@ -21,9 +21,11 @@ limitations under the License.
 #if 1//def __SDSCC__
 #undef __ARM_NEON__
 #undef __ARM_NEON
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
+#include "opencv2/core/core.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/core/hal/interface.h"
+#include <opencv2/imgcodecs.hpp>
 #define __ARM_NEON__
 #define __ARM_NEON
 #else
@@ -38,6 +40,7 @@ using namespace cv;
 
 #include "../interface/xi_interface.hpp"
 #include "xi_readwrite_util.hpp"
+#include "wrapper_constants.h"
 
 
 #define ConvertToFP(fVal, iPart, fbits)	((int)((iPart<<fbits) + ((fVal-(float)iPart))*(1<<fbits)))
@@ -94,61 +97,39 @@ void Trim2FixedPoint(float &data, const int bw, const int fl, int round_floor_fl
 
 }
 
-int casttoBuffptr(unsigned int *img_path, IO_DATA_TYPE *buff_ptr, int height, int width, int img_channel)
+int casttoBuffptr(void* img_path, IO_DATA_TYPE *buff_ptr, int height, int width, int img_channel,int fbits_input)
 {
-	cv::Mat frame;
-
+  unsigned int* frame;
 	if(img_channel == 3)
-    frame = Mat(height,width,CV_32UC3,(void*)img_path);
+    frame = (unsigned int*)img_path;
   else {
     std :: cout << "[ERROR] Only support image with 3 channels - But img_channel is set to" << img_channel << std :: endl;
     return -1;
   }
-	if(!frame.data)
+	if(frame == nullptr)
 	{
-		std :: cout << "[ERROR] Image read failed - " << img_path << std :: endl;
+		std :: cout << "[ERROR] Image read failed - " << std :: endl;
 		return -1;
 	}
 	else
 	{
-		std :: cout << "[IMRDx] Image read : " << img_path << std :: endl;
+		std :: cout << "[IMRDx] Image read at : " << hex << frame << std :: endl;
 	}
 
-  cv::Mat cv_img[1];
-  frame.copyTo(cv_img[0]);
-
-	//float pixel;
-	uchar pixel;
 	int input_index=0;
-	float float_val;
-	short fxval;
-	int mean_idx = 0;
-
 	for (int h = 0; h < height; ++h)
 	{
-		const uchar* ptr = cv_img[0].ptr<uchar>(h);//data;
-		int img_index = 0;
 		for (int w = 0; w < width; ++w)
 		{
 			for (int ch = 0; ch < img_channel; ++ch)
 			{
-				pixel = ptr[img_index++];
-
-				short pixel1 = (short)pixel << fbits_input;
-
-				mean_idx = (ch * resize_h + h + h_off) * resize_w + w + w_off;
-				float float_mean = mean_ptr[mean_idx];
-
-				IO_DATA_TYPE ival = (IO_DATA_TYPE)float_mean;
-				IO_DATA_TYPE mean_fxval = ConvertToFP(float_mean, ival, fbits_input);
-				fxval = pixel1 - mean_fxval;
-
-				buff_ptr[input_index] = fxval;
-
+        if (frame[input_index])
+				  buff_ptr[input_index] = 1;
+        else
+          buff_ptr[input_index] = 0;
 				input_index++;
 			}// Channels
 		}// Image width
-
 	}// Image Height
 
 	return 0;
@@ -656,6 +637,67 @@ int loadMeanSubtractedDatafromBuffptr(std::vector<void *> normalizeInput, IO_DAT
 
 //# Input Read
 int inputNormalization(std::vector<void *>input, int resize_h, int resize_w, 
+					unsigned int *img_path1, unsigned int *img_path2, int inp_mode, 
+					float *mean_ptr, float *var_ptr,
+					int numImg_to_process, io_layer_info io_layer_info_ptr)
+{
+
+	//# use for Pixel wise mean subtraction
+	//# Currently support is disabled
+	char *mean_path;
+	
+	//# Load input layer params
+	int inp_height  = io_layer_info_ptr.in_height;
+	int inp_width   = io_layer_info_ptr.in_width;
+	int inp_bw      = io_layer_info_ptr.in_bw;
+	int inp_fbits   = io_layer_info_ptr.in_fbits;
+	int inp_channel = io_layer_info_ptr.in_channel;
+	int inp_depth   = io_layer_info_ptr.in_depth;
+	float th_in		= io_layer_info_ptr.th_in;
+	int quant_scheme_flag = io_layer_info_ptr.quant_scheme_flag;
+
+	int en_batch_size_one;
+
+	if(numImg_to_process == 2)
+		en_batch_size_one = 0;
+	else
+		en_batch_size_one = 1;
+
+	int normalize_enable=inp_mode;
+	int status;
+
+	if((resize_h < inp_height) || (resize_w < inp_width))
+	{
+		fprintf(stderr,"[ERROR] invalid resize params\n");
+		return -1;
+	}
+
+	int batch_loop_cnt;
+	if(en_batch_size_one)
+		batch_loop_cnt = 1;
+	else
+		batch_loop_cnt = XBATCH_SIZE;
+
+  if(inp_mode==3)
+  {
+    for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++)
+    {
+      if (batch_id == 0)
+      {
+        status = casttoBuffptr((void*)img_path1, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel,inp_fbits);
+      }
+      else
+      {
+        status = casttoBuffptr((void*)img_path2, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel,inp_fbits);
+      }
+    }
+  }	
+
+	return status;
+}
+
+//# Input Read
+int inputNormalization(std::vector<void *>input, int resize_h, int resize_w, 
 					char *img_path1, char *img_path2, int inp_mode, 
 					float *mean_ptr, float *var_ptr,
 					int numImg_to_process, io_layer_info io_layer_info_ptr)
@@ -751,11 +793,11 @@ int inputNormalization(std::vector<void *>input, int resize_h, int resize_w,
 			{
 				if (batch_id == 0)
 				{
-					status = casttoBuffptr(img_path1, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel);
+					status = casttoBuffptr((void*)img_path1, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel,inp_fbits);
 				}
 				else
 				{
-					status = casttoBuffptr(img_path2, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel);
+					status = casttoBuffptr((void*)img_path2, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel,inp_fbits);
 				}
 			}
 		}
@@ -815,6 +857,25 @@ int outputUnpack(void* output, std::vector<void *> output_unpack, kernel_type_e 
 			int *output_unpack_ptr = (int*)output_unpack[batch_id];
 			memcpy((int*)output_unpack_ptr, output_ptr, outputSize*sizeof(int));
 			output_ptr += (outputSize);
+		}
+	}
+
+  //# For others, just copy the data
+	else
+	{
+		for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++)
+		{
+			float *output_unpack_ptr = (float*)output_unpack[batch_id];
+			float *output_ptr	= (float*)output;
+			output_ptr += batch_id;
+			for(int i=0;i<outputSize;i++)
+			{
+				output_unpack_ptr[i] = output_ptr[i*XBATCH_SIZE];
+        cout << "Output Unpack  ("; 
+        cout << batch_id << "," << i << "): {";
+        cout << hex << output_ptr + i*XBATCH_SIZE << "\\" << output_ptr[i*XBATCH_SIZE];
+        cout << "\\ => " << hex <<output_unpack_ptr + i << "}" << endl;
+			}
 		}
 	}
 }

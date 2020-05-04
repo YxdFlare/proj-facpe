@@ -256,14 +256,14 @@ void ConvolutionForward(
 				scalar_conv_args);
 */
 
-	fprintf(stdout, "STARTING CONVOLUTION\n");
-	fflush(stdout);
-	fprintf(stdout, "Input height: %i\n", scalar_conv_args[0]);
-	fprintf(stdout, "Input width: %i\n", scalar_conv_args[1]);
-	fprintf(stdout, "Output height: %i\n", scalar_conv_args[2]);
-	fprintf(stdout, "Output width: %i\n", scalar_conv_args[3]);
-	fprintf(stdout, "Weight loop count: %i\n", scalar_conv_args[92]);
-	fflush(stdout);
+	// fprintf(stdout, "STARTING CONVOLUTION\n");
+	// fflush(stdout);
+	// fprintf(stdout, "Input height: %i\n", scalar_conv_args[0]);
+	// fprintf(stdout, "Input width: %i\n", scalar_conv_args[1]);
+	// fprintf(stdout, "Output height: %i\n", scalar_conv_args[2]);
+	// fprintf(stdout, "Output width: %i\n", scalar_conv_args[3]);
+	// fprintf(stdout, "Weight loop count: %i\n", scalar_conv_args[92]);
+	// fflush(stdout);
     
 	DnnWrapper(
 #if __CONV_ENABLE__==1
@@ -366,8 +366,8 @@ void PoolForward(
 #endif
 */
 
-	fprintf(stdout, "STARTING POOL\n");
-	fflush(stdout);
+	// fprintf(stdout, "STARTING POOL\n");
+	// fflush(stdout);
   
 	DnnWrapper( 
 #if __CONV_ENABLE__==1

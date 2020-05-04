@@ -17,20 +17,38 @@ set IDIRS "\
 -I../software/init \
 -I../software/interface \
 -I../software/xtract \
--I../lib/cblas/arm64 \
--I../lib/openblas/include \
+-I../software/app \
+-I/home/yd383/openblas/include \
+-I/home/yd383/opencv/include \
 -I/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/Vivado/2018.2/data/simmodels/xsim/2018.2/lnx64/6.2.0/ext/protobuf/include \
 -I/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/SDx/2018.2/target/x86/include \
 -I/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/Vivado/2018.2/include \
--I/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/SDx/2018.2/target/x86/include"
+-I/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/SDx/2018.2/target/x86/include \
+-I../src/beh \
+-I../src/lib \
+-I../src/inc \
+-I../src/encoder \
+-I../src/dataproc \
+-I../src/top \
+-I../src/test"
 
 set LLIBS "\
+-Wl,-rpath=/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/Vivado/2018.2/data/simmodels/xsim/2018.2/lnx64/6.2.0/ext/protobuf \
+-Wl,-rpath=/home/yd383/openblas/lib \
+-Wl,-rpath=/home/yd383/opencv/lib64 \
+-Wl,-rpath=/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/SDx/2018.2/target/x86 \
 -L/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/Vivado/2018.2/data/simmodels/xsim/2018.2/lnx64/6.2.0/ext/protobuf \
--L../lib/openblas/lib \
+-L/home/yd383/openblas/lib \
+-L/home/yd383/opencv/lib64 \
 -L/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/SDx/2018.2/target/x86 \
--lopenblas
+-lopenblas \
+-lopencv_core \
+-lopencv_imgproc \
+-lopencv_highgui \
+-lopencv_imgcodecs \
 -lprotobuf"
 
+# C++ source files
 set CSTD "-std=c++0x"
 
 # Set the top-level function to be DnnWrapper from "design/wrapper/dnn_wrapper.cpp" 
@@ -64,6 +82,8 @@ add_files -tb ../software/scheduler/xi_thread_routines.cpp -cflags "$CSTD $IDIRS
 
 add_files -tb ../software/scheduler/xi_utils.cpp -cflags "$CSTD $IDIRS" 
 
+
+
 set files [glob -directory "../software/swkernels" "*.cpp"]
 foreach file $files {
 add_files -tb $file -cflags "$CSTD $IDIRS" 
@@ -85,16 +105,36 @@ add_files ../design/pool/src/pooling_layer_dp_2xio_top.cpp -cflags "$CSTD $IDIRS
 
 add_files ../design/deconv/src/xi_deconv_top.cpp -cflags "$CSTD $IDIRS -D__HW__ -g -I../design/deconv/include"
 
+# C source files
+# DUFT source files
+set DUFT {}
+lappend DUFT "../src/lib/common.c"
+lappend DUFT "../src/top/top.c"
+lappend DUFT "../src/beh/DUFT_ap_ctrl_chain.c"
+lappend DUFT "../src/beh/DUT.c"
+lappend DUFT "../src/encoder/encoder.c"
+lappend DUFT "../src/dataproc/dataproc.c"
+lappend DUFT "../src/test/directed_test.c"
+
+for {set i 0} {$i < [llength $DUFT]} {incr i} {
+  add_files [lindex $DUFT $i] -cflags "-std=c11 $IDIRS"
+}
+
+add_files -blackbox ../src/blackbox/DUFT_bkb.json
+
 # SPECIFY MODEL TO TEST HERE
 add_files -tb "../software/app/main.cpp" -cflags "$CSTD $IDIRS" 
+add_files -tb "../software/app/app_chai.cpp" -cflags "$CSTD $IDIRS" 
 
 open_solution "solution2"
 set_part $part_name
 
 create_clock -period 10
 
-csim_design -ldflags $LLIBS
+csim_design -ldflags "$LLIBS --verbose"
 
-csynth_design 
+#csynth_design 
 
-cosim_design -ldflags $LLIBS -trace_level port
+#cosim_design -ldflags $LLIBS -trace_level port
+
+exit

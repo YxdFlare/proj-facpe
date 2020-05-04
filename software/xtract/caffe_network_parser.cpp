@@ -192,12 +192,12 @@ XGraph* ParseCaffeNetwork(const string& deployFile, const string& caffemodelFile
         // #. Ignore a train-only layer and parse a test-layer
         if(is_layer_train_only)
         {
-            cout << "[PARSE] Ignoring TRAIN-only layer : " << cLayer.name() << endl;
+            // cout << "[PARSE] Ignoring TRAIN-only layer : " << cLayer.name() << endl;
             continue;
         }
         else
         {
-            cout << "[PARSE] Parsing " << cLayer.name() << endl;
+            // cout << "[PARSE] Parsing " << cLayer.name() << endl;
         }
 
         // #. Check if it is an user-defined layer
@@ -379,7 +379,7 @@ void extractConvolutionTrainedData(XGraph* graph, const string& layerName, const
     string txtFileName;
 
     // Extract the weights, do trimming & rounding before saving to TXT file
-    cerr << "[IG001] Extracting " << tmpXlayer->name << " weights ... " << endl;
+    // cerr << "[IG001] Extracting " << tmpXlayer->name << " weights ... " << endl;
     vector<int> weightsShape = getBlobDim(binLayer.blobs(0));
     ELOG(  ((weightsShape.at(0) != tmpXlayer->conv_params->M) || 
             (weightsShape.at(1) != (tmpXlayer->conv_params->N/tmpXlayer->conv_params->group)) ||
@@ -410,7 +410,7 @@ void extractConvolutionTrainedData(XGraph* graph, const string& layerName, const
 #endif
     
     // Extract the bias if bias is present, else save a vector filled with zeros
-    cerr << "[IG001] Extracting " << tmpXlayer->name << " bias ... " << endl;
+    // cerr << "[IG001] Extracting " << tmpXlayer->name << " bias ... " << endl;
     vector<int> biasShape;
     vector<float> bias;
     if(tmpXlayer->conv_params->has_bias)
@@ -494,7 +494,7 @@ void extractDeconvolutionTrainedData(XGraph* graph, const string& layerName, con
 #endif
     
     // Extract the bias if bias is present, else save a vector filled with zeros
-    cerr << "[IG001] Extracting " << tmpXlayer->name << " weights ... " << endl;
+    // cerr << "[IG001] Extracting " << tmpXlayer->name << " weights ... " << endl;
     vector<float> bias;
     vector<int> biasShape;
 
@@ -548,7 +548,7 @@ void extractFCTrainedData(XGraph* graph, const string& layerName, const caffe::N
     // Extract the weights
 
     // Check if filter shape is matching
-    cerr << "[IG001] Extracting " << tmpXlayer->name << " weights ... " << endl;
+    // cerr << "[IG001] Extracting " << tmpXlayer->name << " weights ... " << endl;
     vector<int> weightsShape = getBlobDim(binLayer.blobs(0));
     ELOG( (weightsShape.at(0) != tmpXlayer->fc_params->M) || (weightsShape.at(1) != tmpXlayer->fc_params->N), EP035,
           "FC Layer: " << tmpXlayer->name << " - mismatch in filter shape. " 
@@ -574,7 +574,7 @@ void extractFCTrainedData(XGraph* graph, const string& layerName, const caffe::N
 #endif
     
     // Extract the bias if bias is present, else save a vector filled with zeros
-    cerr << "[IG001] Extracting " << tmpXlayer->name << " bias ... " << endl;
+    // cerr << "[IG001] Extracting " << tmpXlayer->name << " bias ... " << endl;
     vector<int> biasShape;
     vector<float> bias;
     if(tmpXlayer->fc_params->has_bias)
@@ -622,7 +622,7 @@ void extractL2NormalizeTrainedData(XGraph* graph, const string& layerName, const
     string txtFileName;
 
     // Extract the weights
-    cerr << "[IG001] Extracting " << tmpXlayer->name << " weights ... " << endl;
+    // cerr << "[IG001] Extracting " << tmpXlayer->name << " weights ... " << endl;
     int channels = tmpXlayer->topShape.at(0).at(1);               // Number of feature maps
     caffe::BlobProto blob = binLayer.blobs(0);
     
@@ -678,7 +678,7 @@ void extractBatchNormTrainedData(XGraph* graph, const string& layerName, const c
     string txtFileName;
 
     // Extract MWA
-    cerr << "[IG001] Extracting " << tmpXlayer->name << " weights ... " << endl;
+    // cerr << "[IG001] Extracting " << tmpXlayer->name << " weights ... " << endl;
     vector<float> mwa = extractBlobToVector(binLayer.blobs(2));
     float scaling_factor = mwa[0] == 0 ? 0 : 1.0f/mwa[0];
 
@@ -760,7 +760,7 @@ void extractScaleTrainedData(XGraph* graph, const string& layerName, const caffe
     string txtFileName;
 
     // Extract gamma 
-    cerr << "[IG001] Extracting " << tmpXlayer->name << " weights ... " << endl;
+    // cerr << "[IG001] Extracting " << tmpXlayer->name << " weights ... " << endl;
 
     // Check if filter shape is matching
     vector<int> weightsShape = getBlobDim(binLayer.blobs(0));

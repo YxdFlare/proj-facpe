@@ -5,9 +5,9 @@
 
 #undef __ARM_NEON__
 #undef __ARM_NEON
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
+#include "opencv2/core/core.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
 #define __ARM_NEON__
 #define __ARM_NEON
 
@@ -57,7 +57,7 @@ int dataproc_chai(char* dirpath, char* prototxt, char* caffemodel, unsigned int*
      	normalizeInput.push_back(ptr);
     }
     
-    int status = inputNormalization(normalizeInput, resize_h, resize_w, img_path1, img_path2, 
+    int status = inputNormalization(normalizeInput, resize_h, resize_w, (char*)img_path1, (char*)img_path2, 
     				inp_mode, mean_ptr, NULL, numImg_to_process, io_layer_info_ptr1);
 
     if (status == -1) {
@@ -90,6 +90,7 @@ int dataproc_chai(char* dirpath, char* prototxt, char* caffemodel, unsigned int*
         ptr = malloc(out_size);
         output.push_back(ptr);
     }
+    cerr << "[INFO] Output Kernel Type : " << io_layer_info_ptr1.out_kerType << endl;
     
     xiInputRead(normalizeInput, input, numImg_to_process, io_layer_info_ptr1);
     xiExec(chai_handle1, input, output);

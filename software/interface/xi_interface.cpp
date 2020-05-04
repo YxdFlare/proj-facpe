@@ -81,26 +81,26 @@ void *xiInit(char *dirpath,  char* prototxt,  char* caffemodel,
 	map < string, XLayer* >::iterator it_layer=graph->layers.begin();
 	string quant_schem = it_layer->second->quantization_scheme;
 	kernelInfo opt_descriptor(quant_schem);
-	std::cout << "[INFOx] Graph generated"  << std::endl;
-	std::cout << "[INFOx] Generating JobQueue" << std::endl;
+	// std::cout << "[INFOx] Graph generated"  << std::endl;
+	// std::cout << "[INFOx] Generating JobQueue" << std::endl;
 
 	vector <XlayerData> xlayer_seq;
 	xlayer_sequence_generator(xlayer_seq, graph,opt_descriptor, layer1_or_not);
 	//xlayer_print(xlayer_seq);
 
-	std::cout << "[INFOx] JobQueue generated"  << std::endl;
-	std::cout << "[INFOx] Creating Memory" << std::endl;
+	// std::cout << "[INFOx] JobQueue generated"  << std::endl;
+	// std::cout << "[INFOx] Creating Memory" << std::endl;
 	//graph->drawGraph("/tmp/optimized_graph.dot");
 	//# Call buffer management block
 	xiBuffCreate(xlayer_seq, chaihandle_info->JobQueue, chaihandle_info->ptrsList);
 
 	//bufMgmt_print(xlayer_seq, chaihandle_info->JobQueue);
 
-	std::cout << "\n[INFOx] Memory created" << std::endl;
+	std::cout << "[INFOx] Memory created" << std::endl;
 
-	std :: cout << "[INFOx] Network Path : " << dirpath << std :: endl;
+	// std :: cout << "[INFOx] Network Path : " << dirpath << std :: endl;
 
-	std::cout << "\n[INFOx] Init Start : This may take a while ...";
+	std::cout << "[INFOx] Init Start : This may take a while ...";
 
 	//# xChange Init
 	initXChangeHost(dirpath, xlayer_seq, chaihandle_info->JobQueue, en_batch_size_one);
