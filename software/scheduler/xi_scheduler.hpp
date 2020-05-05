@@ -17,6 +17,11 @@ limitations under the License.
 #ifndef _XI_SCHEDULER_HPP_
 #define _XI_SCHEDULER_HPP_
 
+#include "../../src/inc/wrapper_constants.h"
+#include "../../src/inc/top_constants.h"
+#include "../../src/inc/type.h"
+
+
 //#include <cstdint>
 #include <vector>
 #include <unistd.h>

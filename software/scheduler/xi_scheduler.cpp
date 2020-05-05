@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ----------------------------------------------------*/
 #include "xi_scheduler.hpp"
+#include "../../src/inc/wrapper_constants.h"
+#include "../../src/inc/top_constants.h"
+#include "../../src/inc/type.h"
 
 //# Checks Dependence of a layer
 bool chkDeps(std::vector<bool> &layerDone, std::vector<layerID> &previous)
@@ -32,7 +35,9 @@ bool chkDeps(std::vector<bool> &layerDone, std::vector<layerID> &previous)
 
 //# Scheduler for all the layers/tasks in the network in optimal way
 //# to the PL or PS
-void xiExec(void *handle, vector<void *> input, vector<void *> output)
+void xiExec(void *handle, vector<void *> input, vector<void *> output,
+// duft top-level function arguments
+int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1])
 {
 	if(handle == NULL)
 	{
@@ -300,8 +305,10 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 #if !SINGLE_IO_PORT
 							(CHAR_TYPE*)hwQueue[ImgId][whichConv].out_ptrs[3],
 #endif
-							(INT_TYPE *)hwQueue[ImgId][whichConv].params
-					);
+							(INT_TYPE *)hwQueue[ImgId][whichConv].params,
+// duft top-level function arguments
+func,addr,data,rd_wr,encoded_imgset,dcs,final_results					
+          );
 
 					convImgId = ImgId; 
 					convInUse = true; 
@@ -335,7 +342,9 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 							(SHORT_TYPE*)hwQueue[ImgId][whichPool].in_ptrs[0], (SHORT_TYPE*)hwQueue[ImgId][whichPool].out_ptrs[0],
 							(SHORT_TYPE*)hwQueue[ImgId][whichPool].in_ptrs[1], (SHORT_TYPE*)hwQueue[ImgId][whichPool].out_ptrs[1],
 							(CHAR_TYPE*)hwQueue[ImgId][whichPool].wts_ptrs[0],
-							(INT_TYPE*)hwQueue[ImgId][whichPool].params
+							(INT_TYPE*)hwQueue[ImgId][whichPool].params,
+// duft top-level function arguments
+func,addr,data,rd_wr,encoded_imgset,dcs,final_results
 					);
 
 					poolImgId = ImgId;
@@ -423,7 +432,9 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 							(SHORT_TYPE*)hwQueue[ImgId][whichDeconv].in_ptrs[0], (SHORT_TYPE*)hwQueue[ImgId][whichDeconv].in_ptrs[1],
 							(SHORT_TYPE*)hwQueue[ImgId][whichDeconv].in_ptrs[2], (SHORT_TYPE*)hwQueue[ImgId][whichDeconv].wts_ptrs[0],
 							(SHORT_TYPE*)hwQueue[ImgId][whichDeconv].bias_ptr, (INT_TYPE*)hwQueue[ImgId][whichDeconv].out_ptrs[0],
-							(INT_TYPE*)hwQueue[ImgId][whichDeconv].params);
+							(INT_TYPE*)hwQueue[ImgId][whichDeconv].params,
+// duft top-level function arguments
+func,addr,data,rd_wr,encoded_imgset,dcs,final_results);
 
 					deconvImgId = ImgId; 
 					deconvInUse = true; break;
@@ -743,7 +754,8 @@ void xiExec(void *handle, vector<void *> input, vector<void *> output)
 #if !SINGLE_IO_PORT
 						(CHAR_TYPE*)hwQueue[convImgId][whichConv].out_ptrs[3],
 #endif
-						(INT_TYPE *)hwQueue[convImgId][whichConv].params
+						(INT_TYPE *)hwQueue[convImgId][whichConv].params,
+            CHAI,0,0,0,0,0,0
 				);
 
 #ifdef __SDSOC

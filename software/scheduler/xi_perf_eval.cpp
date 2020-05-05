@@ -321,7 +321,8 @@ int runLayer(const char *layerType, std::vector<int> &params)
     #if !SINGLE_IO_PORT 
         (char*)output[3], 
     #endif
-        scalar_conv_args);
+        scalar_conv_args,
+        CHAI,0,0,0,0,0,0);
         
     /*sds_wait(1);
     end = sds_clock_counter();

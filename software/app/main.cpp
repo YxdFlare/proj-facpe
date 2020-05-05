@@ -16,6 +16,60 @@ extern "C" {
 #include <iostream>
 #include <iomanip>
 
+//#include "main.hpp"
+#include <ap_int.h>
+#include "../include/hw_settings.h"
+
+#if PORT_BITWIDTH_64BIT
+#define GMEM_INPUTTYPE       unsigned long long int
+#define GMEM_INTYPE_OTHER    ap_uint<64>
+#define GMEM_WEIGHTTYPE      ap_uint<64>
+#define GMEM_OUTTYPE         ap_uint<64>
+#define GMEM_MAXPOOLTYPE     ap_uint<128>
+#define GMEM_INTYPE_FC       ap_uint<128>
+#define GMEM_BIASTYPE        unsigned long long int
+#else
+#define GMEM_INPUTTYPE       unsigned long long int
+#define GMEM_INTYPE_OTHER    ap_uint<128>
+#define GMEM_WEIGHTTYPE      ap_uint<128>
+#define GMEM_OUTTYPE         ap_uint<128>
+#define GMEM_MAXPOOLTYPE     ap_uint<128>
+#define GMEM_INTYPE_FC       ap_uint<128>
+#define GMEM_BIASTYPE        unsigned long long int
+#endif  //#if PORT_BITWIDTH_64BIT
+
+#define CONV_FLAG 0		
+#define POOL_FLAG 1		
+#define DECONV_FLAG 2		
+#define __CONV_ENABLE__ 1		
+#define __POOL_ENABLE__ 1		
+#define __DECONV_ENABLE__ 0		
+
+#define CHAR_TYPE     char
+#define SHORT_TYPE    short
+#define INT_TYPE      int
+
+
+int DnnWrapper( 		
+ap_uint<128>*, ap_uint<128>*, 
+ap_uint<128>*, ap_uint<128>*, 
+ap_uint<128>*, 
+ap_uint<128>*, 
+ap_uint<128>*, 
+ap_uint<128>*, 
+unsigned long long*, unsigned long long*, 
+unsigned long long*, unsigned long long*,
+unsigned long long*, 
+unsigned long long*,  
+int*, 
+ap_uint<128>*, ap_uint<128>*, 
+ap_uint<128>*, ap_uint<128>*, 
+ap_uint<128>*, 
+int*, 
+int, 
+int, unsigned int, unsigned int, int, unsigned int*, unsigned int*, float*
+);
+
 RF _rf;
 u32 _dut_value[1];
 u32 _dut_state[1];
@@ -28,14 +82,116 @@ using namespace std;
 //-------------------------------------------------------------------------------
 // DUFT helper functions
 //-------------------------------------------------------------------------------
-
 int send_op(u32 operation, u32 target_state, int timer[1])
 {
-  top(DUFT,OPCODE_BASE,operation,WRITE,0,0,0);
-  top(DUFT,OPCODE_BASE,NONE,WRITE,0,0,0);
+  DnnWrapper(
+                #if __CONV_ENABLE__==1
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #endif
+                        (GMEM_OUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_OUTTYPE *)0,
+                #endif
+                        (GMEM_INTYPE_OTHER *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INTYPE_OTHER *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
+                #if !DISABLE_BN
+                        (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INPUTTYPE *)0,
+                #endif
+                        0,
+                #endif//CONV kernel
+                #if __POOL_ENABLE__==1
+                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE*) 0,
+                                    0,
+                #endif//POOL kernel
+                #if __DECONV_ENABLE__==1
+                        0, 0, 0, (unsigned long long int*)0, 0,
+                #endif//DECONV kernel
+                        0,
+  DUFT,OPCODE_BASE,operation,WRITE,0,0,0);
+  DnnWrapper(
+                #if __CONV_ENABLE__==1
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                  #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+                          (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                  #endif
+                          (GMEM_OUTTYPE *)0,
+                  #if !SINGLE_IO_PORT
+                          (GMEM_OUTTYPE *)0,
+                  #endif
+                          (GMEM_INTYPE_OTHER *)0,
+                  #if !SINGLE_IO_PORT
+                          (GMEM_INTYPE_OTHER *)0,
+                  #endif
+                          (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
+                  #if !DISABLE_BN
+                          (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
+                  #endif
+                          (GMEM_INPUTTYPE *)0,
+                  #if !SINGLE_IO_PORT
+                          (GMEM_INPUTTYPE *)0,
+                  #endif
+                          0,
+                #endif//CONV kernel
+                #if __POOL_ENABLE__==1
+                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE*) 0,
+                                    0,
+                #endif//POOL kernel
+                #if __DECONV_ENABLE__==1
+                        0, 0, 0, (unsigned long long int*)0, 0,
+                #endif//DECONV kernel
+                        0,
+  DUFT,OPCODE_BASE,NONE,WRITE,0,0,0);
   u32 landed_state = INVALID_STATE;
   while (landed_state != target_state) {
-    landed_state = (top(DUFT,STATE_BASE,0,READ,0,0,0) & WRAPPER_FSM_CS);
+    landed_state = (
+      DnnWrapper(
+                #if __CONV_ENABLE__==1
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #endif
+                        (GMEM_OUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_OUTTYPE *)0,
+                #endif
+                        (GMEM_INTYPE_OTHER *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INTYPE_OTHER *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
+                #if !DISABLE_BN
+                        (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INPUTTYPE *)0,
+                #endif
+                        0,
+                #endif//CONV kernel
+                #if __POOL_ENABLE__==1
+                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE*) 0,
+                                    0,
+                #endif//POOL kernel
+                #if __DECONV_ENABLE__==1
+                        0, 0, 0, (unsigned long long int*)0, 0,
+                #endif//DECONV kernel
+                        0,
+      DUFT,STATE_BASE,0,READ,0,0,0) & WRAPPER_FSM_CS);
     if (*timer < 1000)
       (*timer) ++;
     else {
@@ -50,17 +206,41 @@ int call_dut(u32 input, u32* output)
 {
   int err = 0;
   int tim = 0;
-  top(DUFT,DUT_IN_BASE,input,WRITE,0,0,0);
-  tim = 0;
-  err = send_op(INPUT,INPUT_RDY,&tim);
-  if(err) return err;
-  tim = 0;
-  err = send_op(RUN,OUTPUT_VAL,&tim);
-  if(err) return err;
-  tim = 0;
-  err = send_op(ENDR,IDLE,&tim);
-  if(err) return err;
-  *output = top(DUFT,DUT_OUT_BASE,0,READ,0,0,0);
+  DnnWrapper(               
+                #if __CONV_ENABLE__==1
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #endif
+                        (GMEM_OUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_OUTTYPE *)0,
+                #endif
+                        (GMEM_INTYPE_OTHER *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INTYPE_OTHER *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
+                #if !DISABLE_BN
+                        (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INPUTTYPE *)0,
+                #endif
+                        0,
+                #endif//CONV kernel
+                #if __POOL_ENABLE__==1
+                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE*) 0,
+                                    0,
+                #endif//POOL kernel
+                #if __DECONV_ENABLE__==1
+                        0, 0, 0, (unsigned long long int*)0, 0,
+                #endif//DECONV kernel
+                        0,                        
+  DUFT,DUT_OUT_BASE,0,READ,0,0,0);
   return 0;  
 }
 
@@ -71,7 +251,41 @@ int call_dft(u32 input,u32* dft_buf)
   int i = 0;
   int tim = 0;
 
-  top(DUFT,DUT_IN_BASE,input,WRITE,0,0,0);
+  DnnWrapper(
+                #if __CONV_ENABLE__==1
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #endif
+                        (GMEM_OUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_OUTTYPE *)0,
+                #endif
+                        (GMEM_INTYPE_OTHER *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INTYPE_OTHER *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
+                #if !DISABLE_BN
+                        (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INPUTTYPE *)0,
+                #endif
+                        0,
+                #endif//CONV kernel
+                #if __POOL_ENABLE__==1
+                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE*) 0,
+                                    0,
+                #endif//POOL kernel
+                #if __DECONV_ENABLE__==1
+                        0, 0, 0, (unsigned long long int*)0, 0,
+                #endif//DECONV kernel
+                        0,                        
+    DUFT,DUT_IN_BASE,input,WRITE,0,0,0);
 
   tim = 0;
   err = send_op(INPUT,INPUT_RDY,&tim);
@@ -84,16 +298,121 @@ int call_dft(u32 input,u32* dft_buf)
   
   do {
     for(i = 0; i < DUMP_NBR; i++)
-      *(dft_buf + lat * DUMP_NBR + i) = top(DUFT,DFT_OUT_BASE + i,0,READ,0,0,0);
+      *(dft_buf + lat * DUMP_NBR + i) = 
+      DnnWrapper(
+                #if __CONV_ENABLE__==1
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #endif
+                        (GMEM_OUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_OUTTYPE *)0,
+                #endif
+                        (GMEM_INTYPE_OTHER *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INTYPE_OTHER *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
+                #if !DISABLE_BN
+                        (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INPUTTYPE *)0,
+                #endif
+                        0,
+                #endif//CONV kernel
+                #if __POOL_ENABLE__==1
+                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE*) 0,
+                                    0,
+                #endif//POOL kernel
+                #if __DECONV_ENABLE__==1
+                        0, 0, 0, (unsigned long long int*)0, 0,
+                #endif//DECONV kernel
+                        0,
+      DUFT,DFT_OUT_BASE + i,0,READ,0,0,0);
     tim = 0;
     err = send_op(NEXT,SCAN_RD,&tim);
 
     if(err) return err;
     lat++;
-  } while (!(top(DUFT,STATE_BASE,0,READ,0,0,0) & DUT_OP_CM));
+  } while (!(
+      DnnWrapper(
+                #if __CONV_ENABLE__==1
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #endif
+                        (GMEM_OUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_OUTTYPE *)0,
+                #endif
+                        (GMEM_INTYPE_OTHER *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INTYPE_OTHER *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
+                #if !DISABLE_BN
+                        (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INPUTTYPE *)0,
+                #endif
+                        0,
+                #endif//CONV kernel
+                #if __POOL_ENABLE__==1
+                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE*) 0,
+                                    0,
+                #endif//POOL kernel
+                #if __DECONV_ENABLE__==1
+                        0, 0, 0, (unsigned long long int*)0, 0,
+                #endif//DECONV kernel
+                        0,
+      DUFT,STATE_BASE,0,READ,0,0,0) & DUT_OP_CM));
 
   for(i = 0; i < DUMP_NBR; i++)
-    *(dft_buf + lat * DUMP_NBR + i) = top(DUFT,DFT_OUT_BASE + i,0,READ,0,0,0);
+    *(dft_buf + lat * DUMP_NBR + i) = 
+    DnnWrapper(
+                #if __CONV_ENABLE__==1
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #endif
+                        (GMEM_OUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_OUTTYPE *)0,
+                #endif
+                        (GMEM_INTYPE_OTHER *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INTYPE_OTHER *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
+                #if !DISABLE_BN
+                        (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INPUTTYPE *)0,
+                #endif
+                        0,
+                #endif//CONV kernel
+                #if __POOL_ENABLE__==1
+                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE*) 0,
+                                    0,
+                #endif//POOL kernel
+                #if __DECONV_ENABLE__==1
+                        0, 0, 0, (unsigned long long int*)0, 0,
+                #endif//DECONV kernel
+                        0,
+    DUFT,DFT_OUT_BASE + i,0,READ,0,0,0);
   tim = 0;
 
   err = send_op(ENDT,IDLE,&tim);
@@ -182,7 +501,42 @@ int main()
     err_dut = call_dut(*test_inputs_ptr,dut_outputs_ptr);
     
     // encode dcs into images
-    err_encode = top(ENCODE,0,0,0,dcs_ptr,imgset_ptr,0);
+    err_encode = 
+    DnnWrapper(
+                #if __CONV_ENABLE__==1
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #endif
+                        (GMEM_OUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_OUTTYPE *)0,
+                #endif
+                        (GMEM_INTYPE_OTHER *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INTYPE_OTHER *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
+                #if !DISABLE_BN
+                        (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INPUTTYPE *)0,
+                #endif
+                        0,
+                #endif//CONV kernel
+                #if __POOL_ENABLE__==1
+                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE*) 0,
+                                    0,
+                #endif//POOL kernel
+                #if __DECONV_ENABLE__==1
+                        0, 0, 0, (unsigned long long int*)0, 0,
+                #endif//DECONV kernel
+                        0,
+    ENCODE,0,0,0,dcs_ptr,imgset_ptr,0);
     // process these images
 
     //-------------------------------------------------------------------------------

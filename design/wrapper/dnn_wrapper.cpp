@@ -20,7 +20,16 @@ limitations under the License.
 #ifdef __SDSOC
 #include "../conv/include/xi_conv_config.h"
 #endif
+
 #include "ap_int.h"
+
+extern "C" {
+  #include "../../src/top/top.h"
+}
+
+#include "../../src/inc/wrapper_constants.h"
+#include "../../src/inc/top_constants.h"
+#include "../../src/inc/type.h"
 
 #if XI_64BIT_PORT_EN==1
 #define KER_GMEM_INPUTTYPE		 unsigned long long int
@@ -70,84 +79,7 @@ limitations under the License.
 
 #if __CONV_ENABLE__==1					
 #include "../conv/src/xi_convolution_top.hpp" // Replaced function prototype below with header file
-/*
-void XiConvolutionTop(
-					KER_GMEM_WEIGHTTYPE *weights1, KER_GMEM_WEIGHTTYPE *weights2, 
-#if (XI_KER_PROC==16 || (XI_64BIT_PORT_EN==1 && XI_KER_PROC==8))
-					KER_GMEM_WEIGHTTYPE *weights3, KER_GMEM_WEIGHTTYPE *weights4,
-#endif
-					KER_GMEM_OUTTYPE *output1,
-#if !XI_SINGLE_IO_PORT_EN
-					KER_GMEM_OUTTYPE *output2,
-#endif
-					KER_GMEM_INTYPE_OTHER *input_other1,
-#if !XI_SINGLE_IO_PORT_EN
-					KER_GMEM_INTYPE_OTHER *input_other2,
-#endif
-					KER_GMEM_INPUTTYPE *input_1st, KER_GMEM_BIASTYPE *bias,
-#if !XI_DISABLE_BN
-					KER_GMEM_INPUTTYPE *input_norm2, KER_GMEM_INPUTTYPE *input_norm3,
-#endif
-					KER_GMEM_INPUTTYPE *istg_out1,
-#if !XI_SINGLE_IO_PORT_EN
-					KER_GMEM_INPUTTYPE *istg_out2,
-#endif
-					int *scalar_conv_args
-					);*/
 
-/*int ConvolutionWrapper(
-					KER_GMEM_WEIGHTTYPE *weights1, KER_GMEM_WEIGHTTYPE *weights2,
-#if (XI_KER_PROC==16 || (XI_64BIT_PORT_EN==1 && XI_KER_PROC==8))
-					KER_GMEM_WEIGHTTYPE *weights3, KER_GMEM_WEIGHTTYPE *weights4,
-#endif
-					KER_GMEM_OUTTYPE *output1,
-#if !XI_SINGLE_IO_PORT_EN
-					KER_GMEM_OUTTYPE *output2,
-#endif
-					KER_GMEM_INTYPE_OTHER *input_other1,
-#if !XI_SINGLE_IO_PORT_EN
-					KER_GMEM_INTYPE_OTHER *input_other2,
-#endif
-					KER_GMEM_INPUTTYPE *input_1st, KER_GMEM_BIASTYPE *bias,
-#if !XI_DISABLE_BN
-					KER_GMEM_INPUTTYPE *input_norm2, KER_GMEM_INPUTTYPE *input_norm3,
-#endif
-					KER_GMEM_INPUTTYPE *istg_out1,
-#if !XI_SINGLE_IO_PORT_EN
-:					KER_GMEM_INPUTTYPE *istg_out2,
-#endif
-					int *scalar_conv_args
-					)
-{
-#if __SDSOC
-	#pragma SDS async(1)
-#endif
-
-	XiConvolutionTop(weights1, weights2,
-#if (XI_KER_PROC==16 || (XI_64BIT_PORT_EN==1 && XI_KER_PROC==8))
-			         weights3, weights4,
-#endif
-			         output1,
-#if !XI_SINGLE_IO_PORT_EN
-					 output2,
-#endif
-					 input_other1,
-#if !XI_SINGLE_IO_PORT_EN
-					 input_other2,
-#endif
-					 input_1st, bias,
-#if !XI_DISABLE_BN
-					 input_norm2, input_norm3,
-#endif
-					 istg_out1,
-#if !XI_SINGLE_IO_PORT_EN
-					 istg_out2,
-#endif
-					 scalar_conv_args);
-					 
-					 return 0;
-}
-*/
 #endif//CONV KERNEL
 
 #if __POOL_ENABLE__==1
@@ -157,39 +89,12 @@ int PoolTop(
 			KER_GMEM_POOLTYPE_WTS *wts,
 			int *scalar_pool_args
 			);
-/*			
-int PoolWrapper(
-				KER_GMEM_MAXPOOLTYPE *ine1,KER_GMEM_MAXPOOLTYPE *in2,
-				KER_GMEM_MAXPOOLTYPE *out1,KER_GMEM_MAXPOOLTYPE *out2,
-				KER_GMEM_POOLTYPE_WTS *wts,
-				int *scalar_pool_args)
-{
-#if __SDSOC
-	#pragma SDS async(2)		
-#endif
-	PoolTop(in1,in2,out1,out2, wts, scalar_pool_args);
-   return 0;
-}
-*/
+
 #endif//POOL kernel
 
 #if __DECONV_ENABLE__==1
 #include "../deconv/src/xi_deconv_top.hpp" // Replaced function prototype below with header file
-/*
-void XiDeconvTop(KER_GMEM_DECONVINPTYPE* deconvIN, KER_GMEM_DECONVINPTYPE* deconvWT, KER_GMEM_DECONVINPTYPE* deconvBias, KER_GMEM_DECONVOUTTYPE* deconvIDout, int *scalar_deconv_args);
-*/
 
-/*int DeconvWrapper(
-				KER_GMEM_DECONVINPTYPE* deconvIN, KER_GMEM_DECONVINPTYPE* deconvWT, 
-				KER_GMEM_DECONVINPTYPE* deconvBias, KER_GMEM_DECONVOUTTYPE* deconvIDout, int *scalar_deconv_args)
-{
-#if __SDSOC
-	#pragma SDS async(3)
-#endif
-		XiDeconvTop(deconvIN, deconvWT, deconvBias, deconvIDout, scalar_deconv_args);
-		return 0;		
-}
-*/
 #endif//Deconv kernel
 
 int DnnWrapper( 
@@ -226,108 +131,64 @@ int DnnWrapper(
         KER_GMEM_DECONVINPTYPE* deconvIN, KER_GMEM_DECONVINPTYPE* deconvWT, 
 				KER_GMEM_DECONVINPTYPE* deconvBias, KER_GMEM_DECONVOUTTYPE* deconvIDout, int *scalar_deconv_args,
 #endif//DECONV kernel
-        int flag) 
+        int flag,
+// duft top-level function arguments
+int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1]        
+        ) 
 {
-/*
-// New pragmas added for HLS compilation for cosim to pass since pointer parameters need depth specified
-// Based on pragmas in each Xi[Layer]Top() function, so you don't need them necessarily
-// Comment out pragmas if you don't need it if cosim works
+  if (func == CHAI) {
+    #if __CONV_ENABLE__==1
+      if (flag == CONV_FLAG) {
+    #if __SDSOC
+      #pragma SDS async(1)
+    #endif
 
-//#if(__SDSOC == 0) // Uncomment for avoiding these HLS pragmas for SDSoC compilation
+          XiConvolutionTop(weights1, weights2,
+    #if (XI_KER_PROC==16 || (XI_64BIT_PORT_EN==1 && XI_KER_PROC==8))
+                  weights3, weights4,
+    #endif
+                  output1,
+    #if !XI_SINGLE_IO_PORT_EN
+              output2,
+    #endif
+              input_other1,
+    #if !XI_SINGLE_IO_PORT_EN
+              input_other2,
+    #endif
+              input_1st, bias,
+    #if !XI_DISABLE_BN
+              input_norm2, input_norm3,
+    #endif
+              istg_out1,
+    #if !XI_SINGLE_IO_PORT_EN
+              istg_out2,
+    #endif
+              scalar_conv_args);
+      }
+    #endif//CONV kernel
+    #if __POOL_ENABLE__==1
+      if (flag == POOL_FLAG) {
+    #if __SDSOC
+      #pragma SDS async(2)
+    #endif
 
-#if __CONV_ENABLE__==1
-  if (flag == CONV_FLAG) {
-// CONVOLUTION 
-#pragma HLS interface ap_bus port=weights1		depth=500 
-#pragma HLS interface ap_bus port=weights2		depth=500 
-#if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
-#pragma HLS interface ap_bus port=weights3              depth=500
-#pragma HLS interface ap_bus port=weights4              depth=500
-#endif
-#pragma HLS interface ap_bus port=output1		depth=1200
-#pragma HLS interface ap_bus port=output2		depth=1200
-#pragma HLS interface ap_bus port=input_other1		depth=1200
-#pragma HLS interface ap_bus port=input_other2		depth=1200
-#pragma HLS interface ap_bus port=input_1st		depth=1200
-#pragma HLS interface ap_bus port=bias			depth=1200
-#pragma HLS interface ap_bus port=input_norm2		depth=1200
-#pragma HLS interface ap_bus port=input_norm3		depth=1200
-#pragma HLS interface ap_bus port=istg_out1		depth=1200
-#pragma HLS interface ap_bus port=istg_out2		depth=1200
-#pragma HLS interface ap_bus port=scalar_conv_args	depth=128    // Based on array size usage in xi_perf_eval.hpp
+        PoolTop(in1,in2,out1,out2, wts, scalar_pool_args);
+      }
+    #endif//POOL kernel
+    #if __DECONV_ENABLE__==1
+      if (flag == DECONV_FLAG) {
+    #if __SDSOC
+      #pragma SDS async(3)
+    #endif
+
+        XiDeconvTop(deconvIN, deconvWT, deconvBias, deconvIDout, scalar_deconv_args);
+      }
+    #endif//DECONV kernel
+
+    return 0;
   }
-#endif//CONV kernel
-#if __POOL_ENABLE__==1
-  if (flag == POOL_FLAG) {
-// POOLING (matches pooling_layer_dp_2xio_top.cpp)
-#pragma HLS interface ap_bus port=in1			depth=115200
-#pragma HLS interface ap_bus port=in2			depth=115200
-#pragma HLS interface ap_bus port=out1			depth=115200
-#pragma HLS interface ap_bus port=out2			depth=115200
-#pragma HLS interface ap_bus port=wts			depth=36
-#pragma HLS interface ap_bus port=scalar_pool_args	depth=32
+  else {
+    return top(func,addr,data,rd_wr,encoded_imgset,dcs,final_results);
   }
-#endif//POOL kernel
-#if __DECONV_ENABLE__==1
- if (flag == DECONV_FLAG) {
-// DECONVOLUTION (not previously defined in xi_deconv_top.cpp, so these depth values can be played with)
-#pragma HLS interface ap_bus port=deconvIN		depth=115200 // Could be 1200 like convolution
-#pragma HLS interface ap_bus port=deconvWT		depth=115200 // Could be 500 like convolution
-#pragma HLS interface ap_bus port=deconvBias		depth=115200 // Could be 1200 like convolution
-#pragma HLS interface ap_bus port=deconvIDout		depth=115200 // Could be 1200 like convolution
-#pragma HLS interface ap_bus port=scalar_deconv_args	depth=128    // Depth matches convolution
-  }
-#endif//DECONV kernel
-
-//#endif // Corresponds to __SDSOC flag on top
-*/
-
-#if __CONV_ENABLE__==1
-  if (flag == CONV_FLAG) {
-#if __SDSOC
-	#pragma SDS async(1)
-#endif
-
-      XiConvolutionTop(weights1, weights2,
-#if (XI_KER_PROC==16 || (XI_64BIT_PORT_EN==1 && XI_KER_PROC==8))
-			         weights3, weights4,
-#endif
-			         output1,
-#if !XI_SINGLE_IO_PORT_EN
-					 output2,
-#endif
-					 input_other1,
-#if !XI_SINGLE_IO_PORT_EN
-					 input_other2,
-#endif
-					 input_1st, bias,
-#if !XI_DISABLE_BN
-					 input_norm2, input_norm3,
-#endif
-					 istg_out1,
-#if !XI_SINGLE_IO_PORT_EN
-					 istg_out2,
-#endif
-					 scalar_conv_args);
-  }
-#endif//CONV kernel
-#if __POOL_ENABLE__==1
-  if (flag == POOL_FLAG) {
-#if __SDSOC
-	#pragma SDS async(2)
-#endif
-
-    PoolTop(in1,in2,out1,out2, wts, scalar_pool_args);
-  }
-#endif//POOL kernel
-#if __DECONV_ENABLE__==1
-  if (flag == DECONV_FLAG) {
-#if __SDSOC
-	#pragma SDS async(3)
-#endif
-
-    XiDeconvTop(deconvIN, deconvWT, deconvBias, deconvIDout, scalar_deconv_args);
-  }
-#endif//DECONV kernel
-  return 0;
+  
 }

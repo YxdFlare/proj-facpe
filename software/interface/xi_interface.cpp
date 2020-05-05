@@ -30,8 +30,8 @@ const char* getLayerType(kernel_type_e type)
 {
    switch (type)
    {
-      case CONV: return "Convolution";
-      case POOL: return "Pool";
+    case CONV: return "Convolution";
+    case POOL: return "Pool";
 	  case FC_LAYER: return "FC";
 	  case SOFTMAX: return "SoftMax";
 	  case DECONV: return "Deconv";
@@ -143,31 +143,6 @@ void *xiInit(char *dirpath,  char* prototxt,  char* caffemodel,
 	kernel_type_e kerType = chaihandle_info->JobQueue[0][lastLayerIdx].kernType;
 	io_layer_info_ptr->out_kerType = chaihandle_info->JobQueue[0][lastLayerIdx].kernType;
 	io_layer_info_ptr->out_size = chaihandle_info->JobQueue[0][lastLayerIdx].output_size;
-
-#if 0
-	fprintf(stderr, "[INFOx] IO Layer Params\n");
-	std :: cout << "inlayer_exectype : " <<  io_layer_info_ptr->inlayer_exectype << endl;
-	std :: cout << "inlayer_sizebytes : " <<  io_layer_info_ptr->inlayer_sizebytes << endl;
-	std :: cout << "outlayer_exectype : " <<  io_layer_info_ptr->outlayer_exectype << endl;
-	std :: cout << "outlayer_sizebytes : " <<  io_layer_info_ptr->outlayer_sizebytes << endl;
-	std :: cout << "num_in_bufs : " <<  io_layer_info_ptr->num_in_bufs << endl;
-	std :: cout << "num_out_bufs : " <<  io_layer_info_ptr->num_out_bufs << endl;
-
-	if(layer1_or_not == 1)
-	{
-		std :: cout << "in_height : " <<  io_layer_info_ptr->in_height << endl;
-		std :: cout << "in_width : " <<  io_layer_info_ptr->in_width << endl;
-		std :: cout << "in_channel : " <<  io_layer_info_ptr->in_channel << endl;
-		std :: cout << "in_depth : " <<  io_layer_info_ptr->in_depth << endl;
-		std :: cout << "in_fbits : " <<  io_layer_info_ptr->in_fbits << endl;
-		std :: cout << "in_bw : " <<  io_layer_info_ptr->in_bw << endl;
-		std :: cout << "th_in : " <<  io_layer_info_ptr->th_in << endl;
-		std :: cout << "quant_scheme_flag : " <<  io_layer_info_ptr->quant_scheme_flag << endl;
-	}
-
-	std :: cout << "out_kerType : " <<  getLayerType(io_layer_info_ptr->out_kerType) << endl;
-	std :: cout << "out_size : " <<  io_layer_info_ptr->out_size << endl;
-#endif  //#if 0
 
 	std::cout << "\n[INFOx] Init Done" << std::endl;
 

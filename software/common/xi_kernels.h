@@ -13,6 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ----------------------------------------------------*/
+#include "../../src/inc/wrapper_constants.h"
+#include "../../src/inc/top_constants.h"
+#include "../../src/inc/type.h"
 
 #ifndef _XI_KERNELS_H_
 #define _XI_KERNELS_H_
@@ -42,7 +45,9 @@ void ConvolutionForward(
 #if !SINGLE_IO_PORT
 		CHAR_TYPE *istg_out2,
 #endif
-		int *scalar_conv_args );
+		int *scalar_conv_args,
+    // duft top-level function arguments
+int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1] );
 
 
 
@@ -50,7 +55,9 @@ void PoolForward(
 		            SHORT_TYPE *pool_in, SHORT_TYPE *pool_out,
 		            SHORT_TYPE *pool_in1, SHORT_TYPE *pool_out1,
 					CHAR_TYPE *wts,
-				    int *scalar_pool_args
+				    int *scalar_pool_args,
+            // duft top-level function arguments
+int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1]
 				);
 
 void FcForward(
@@ -78,7 +85,9 @@ void DeconvForward(
 		short* deconvIN1, short* deconvIN2, short* deconvIN3,
 		short* deconvWT,
 		short* deconvBias, int* deconvIDout,
-		int *scalar_deconv_args
+		int *scalar_deconv_args,
+    // duft top-level function arguments
+int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1]
 );
 
 

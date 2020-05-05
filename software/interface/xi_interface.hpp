@@ -17,6 +17,9 @@ limitations under the License.
 #ifndef _XI_INTERFACE_HPP_
 #define _XI_INTERFACE_HPP_
 
+#include "../../src/inc/wrapper_constants.h"
+#include "../../src/inc/top_constants.h"
+#include "../../src/inc/type.h"
 //#include <cstdint>
 
 #include "../include/xchange_structs.hpp" 
@@ -48,7 +51,9 @@ typedef struct _io_layer_info io_layer_info;
 void *xiInit(char *dirpath,  char* prototxt,  char* caffemodel,
 		  _io_layer_info *io_layer_info_ptr, int numImg_to_process, bool layer1_or_not, std::string start_layer, std::string end_layer);
 
-void xiExec(void *handle, std::vector<void *> input, std::vector<void *> output);
+void xiExec(void *handle, std::vector<void *> input, std::vector<void *> output,
+// duft top-level function arguments
+int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1]);
 
 void xiRelease(void *chaihandle);
 

@@ -19,6 +19,10 @@ using namespace cv;
 #include "../interface/xi_readwrite_util.hpp"
 #include "../checkers/checkers.hpp"
 
+#include "../../src/inc/wrapper_constants.h"
+#include "../../src/inc/top_constants.h"
+#include "../../src/inc/type.h"
+
 int dataproc_chai(char* dirpath, char* prototxt, char* caffemodel, unsigned int* img_path1, unsigned int* img_path2, float* final_results) {
     io_layer_info io_layer_info_ptr1;
     io_layer_info io_layer_info_ptr2;
@@ -93,9 +97,9 @@ int dataproc_chai(char* dirpath, char* prototxt, char* caffemodel, unsigned int*
     cerr << "[INFO] Output Kernel Type : " << io_layer_info_ptr1.out_kerType << endl;
     
     xiInputRead(normalizeInput, input, numImg_to_process, io_layer_info_ptr1);
-    xiExec(chai_handle1, input, output);
+    xiExec(chai_handle1, input, output,CHAI,0,0,0,0,0,0);
     xiInputRead(normalizeInput, input, numImg_to_process, io_layer_info_ptr2);
-    xiExec(chai_handle2, input, output);
+    xiExec(chai_handle2, input, output,CHAI,0,0,0,0,0,0);
 
     fprintf(stderr, "[INFO] FINISHED EXECUTION\n");
     fflush(stderr);    

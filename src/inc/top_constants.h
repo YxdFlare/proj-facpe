@@ -4,5 +4,6 @@
 #define DUFT 0
 #define ENCODE 1
 #define PROCESS 2
+#define CHAI 3
 
 #endif

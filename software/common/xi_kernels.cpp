@@ -29,6 +29,9 @@ limitations under the License.
 #include "../common/kernelinfo_class.h"
 #include "xi_kernels.h"
 #include "../scheduler/xi_utils.hpp"
+#include "../../src/inc/wrapper_constants.h"
+#include "../../src/inc/top_constants.h"
+#include "../../src/inc/type.h"
 
 #if 0
   #include <sds_lib.h> // Doesn't exist and causes error in HLS compilation
@@ -101,38 +104,11 @@ limitations under the License.
                 int *scalar_pool_argsTemp = NULL;
 
 		// Deconvolution placeholders in DnnWrapper
-      		// short* deconvIN1Temp = NULL; // Passed into DeconvInReArrange
-		// short* deconvIN2Temp = NULL; // Passed into DeconvInReArrange
 		short* deconv_inTemp = NULL; // deconvIN3 parameter modified and passed in
                 short* deconvWTTemp = NULL;
                 short* deconvBiasTemp = NULL;
 		int* deconv_outTemp = NULL; // deconvIDout parameter modified and passed in
                 int *scalar_deconv_argsTemp = NULL;
-
-
-/*
-int ConvolutionWrapper(GMEM_WEIGHTTYPE *weights1,GMEM_WEIGHTTYPE *weight2,
-#if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
-		GMEM_WEIGHTTYPE *weights3,GMEM_WEIGHTTYPE *weight4,
-#endif
-		GMEM_OUTTYPE *output1,
-#if !SINGLE_IO_PORT
-		GMEM_OUTTYPE *output2,
-#endif
-		GMEM_INTYPE_OTHER *input_other1,
-#if !SINGLE_IO_PORT
-		GMEM_INTYPE_OTHER *input_other2,
-#endif
-		GMEM_INPUTTYPE *input_1st, GMEM_BIASTYPE *bias,
-#if !DISABLE_BN
-		GMEM_INPUTTYPE *input_norm2, GMEM_INPUTTYPE *input_norm3,
-#endif
-		GMEM_INPUTTYPE *istg_out1,
-#if !SINGLE_IO_PORT
-		GMEM_INPUTTYPE *istg_out2,
-#endif
-		int *scalar_conv_args);
-*/
 
 int DnnWrapper( 		
 #if __CONV_ENABLE__==1		
@@ -168,7 +144,10 @@ int DnnWrapper(
         short* deconvIN, short* deconvWT, 		
 				short* deconvBias, unsigned long long int* deconvIDout, int *scalar_deconv_args,		
 #endif//DECONV kernel		
-        int flag);		
+        int flag,
+// duft top-level function arguments
+int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1]
+);		
 
 
 void ConvolutionForward(
@@ -192,7 +171,9 @@ void ConvolutionForward(
 #if !SINGLE_IO_PORT
 		CHAR_TYPE *istg_out2,
 #endif
-		int *scalar_conv_args )
+		int *scalar_conv_args,
+// duft top-level function arguments
+int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1])
 {
 
 	//Valid for FC Layers using conv kernel
@@ -232,39 +213,6 @@ void ConvolutionForward(
 	for(int loop_iter=0;loop_iter<pool_split_cnt;loop_iter++)
 	{
 
-/*
-		ConvolutionWrapper((GMEM_WEIGHTTYPE *)weights1,(GMEM_WEIGHTTYPE *)weights2,
-#if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
-				(GMEM_WEIGHTTYPE *)weights3,(GMEM_WEIGHTTYPE *)weights4,
-#endif
-				(GMEM_OUTTYPE *)output1,
-#if !SINGLE_IO_PORT
-				(GMEM_OUTTYPE *)output2,
-#endif
-				(GMEM_INTYPE_OTHER *)input_other1,
-#if !SINGLE_IO_PORT
-				(GMEM_INTYPE_OTHER *)input_other2,
-#endif
-				(GMEM_INPUTTYPE *)input_1st, (GMEM_BIASTYPE *)bias,
-#if !DISABLE_BN
-				(GMEM_INPUTTYPE *)input_norm2, (GMEM_INPUTTYPE *)input_norm3,
-#endif
-				(GMEM_INPUTTYPE *)istg_out1,
-#if !SINGLE_IO_PORT
-				(GMEM_INPUTTYPE *)istg_out2,
-#endif
-				scalar_conv_args);
-*/
-
-	// fprintf(stdout, "STARTING CONVOLUTION\n");
-	// fflush(stdout);
-	// fprintf(stdout, "Input height: %i\n", scalar_conv_args[0]);
-	// fprintf(stdout, "Input width: %i\n", scalar_conv_args[1]);
-	// fprintf(stdout, "Output height: %i\n", scalar_conv_args[2]);
-	// fprintf(stdout, "Output width: %i\n", scalar_conv_args[3]);
-	// fprintf(stdout, "Weight loop count: %i\n", scalar_conv_args[92]);
-	// fflush(stdout);
-    
 	DnnWrapper(
 #if __CONV_ENABLE__==1
         (GMEM_WEIGHTTYPE *)weights1,(GMEM_WEIGHTTYPE *)weights2,
@@ -298,7 +246,9 @@ void ConvolutionForward(
 #if __DECONV_ENABLE__==1
         deconv_inTemp, deconvWTTemp, deconvBiasTemp, (unsigned long long int*)deconv_outTemp, scalar_deconv_argsTemp,
 #endif//DECONV kernel
-        CONV_FLAG);
+        CONV_FLAG,
+// duft top-level function arguments
+func,addr,data,rd_wr,encoded_imgset,dcs,final_results);
 
 	fprintf(stdout, "FINISHED CONVOLUTION\n");
     	fflush(stdout);
@@ -311,25 +261,7 @@ void ConvolutionForward(
 			input_other2 = input_other2 + scalar_conv_args[111];
 			istg_out2    = istg_out2+ scalar_conv_args[112];
 #endif
-			/*
-			if(loop_iter==(pool_split_cnt-2))
-			{
-				scalar_conv_args[4] = scalar_conv_args[113];
-				scalar_conv_args[5] = scalar_conv_args[114];
-				scalar_conv_args[50] = scalar_conv_args[113];
-				scalar_conv_args[51] = scalar_conv_args[114];
-
-				scalar_conv_args[56] = scalar_conv_args[115];
-				scalar_conv_args[58] = scalar_conv_args[116];
-				scalar_conv_args[14] = scalar_conv_args[117];
-				scalar_conv_args[15] = scalar_conv_args[118];
-			}*/
-/*
-			if(loop_iter==(pool_split_cnt-1))
-			{
-				scalar_conv_args[4] = scalar_conv_args[109];
-			}
-			*/
+			
 		}
 		
 #if 0
@@ -342,33 +274,17 @@ void ConvolutionForward(
 #endif
 }
 
-/*
-#if 1//0//(IO_TYPE==16)
-int PoolWrapper(GMEM_MAXPOOLTYPE *poolin, GMEM_MAXPOOLTYPE *poolout, GMEM_MAXPOOLTYPE *poolin1, GMEM_MAXPOOLTYPE *poolout1, GMEM_MAXPOOLTYPE *wts, int *scalar_pool_args);
-#else
-int PoolWrapper(GMEM_MAXPOOLTYPE *poolin, GMEM_MAXPOOLTYPE *poolout, GMEM_MAXPOOLTYPE *poolin1, GMEM_MAXPOOLTYPE *poolout1, int *scalar_pool_args);
-#endif
-*/
+
 void PoolForward(
 		SHORT_TYPE *pool_in, SHORT_TYPE *pool_out,
 		SHORT_TYPE *pool_in1, SHORT_TYPE *pool_out1,
 		CHAR_TYPE * wts,
-		int *scalar_pool_args
+		int *scalar_pool_args,
+    // duft top-level function arguments
+int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1]
 )
 {
-/*#if __POOL_ENABLE__
-	PoolWrapper((GMEM_MAXPOOLTYPE *)pool_in, (GMEM_MAXPOOLTYPE *)pool_in1,
-			(GMEM_MAXPOOLTYPE *)pool_out, (GMEM_MAXPOOLTYPE *)pool_out1,
-#if 1//0//(IO_TYPE==16)
-			(GMEM_MAXPOOLTYPE*) wts,
-#endif
-			scalar_pool_args);
-#endif
-*/
 
-	// fprintf(stdout, "STARTING POOL\n");
-	// fflush(stdout);
-  
 	DnnWrapper( 
 #if __CONV_ENABLE__==1
         (GMEM_WEIGHTTYPE *)weights1Temp,(GMEM_WEIGHTTYPE *)weights2Temp,
@@ -402,7 +318,9 @@ void PoolForward(
 #if __DECONV_ENABLE__==1
         deconv_inTemp, deconvWTTemp, deconvBiasTemp, (unsigned long long int*)deconv_outTemp, scalar_deconv_argsTemp,
 #endif//DECONV kernel
-        POOL_FLAG);
+        POOL_FLAG,
+        // duft top-level function arguments
+func,addr,data,rd_wr,encoded_imgset,dcs,final_results);
 
         fprintf(stdout, "FINISHED POOLING\n");
         fflush(stdout);
@@ -535,51 +453,14 @@ void DeconvForward(
 		short* deconvIN1, short* deconvIN2, short* deconvIN3,
 		short* deconvWT,
 		short* deconvBias, int* deconvIDout,
-		int *scalar_deconv_args
+		int *scalar_deconv_args,
+// duft top-level function arguments
+int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1]
 )
 {
 	//# Re-arrage previous layer output for Deconv input
 	DeconvInReArrange((IO_DATA_TYPE *)deconvIN1, (IO_DATA_TYPE *)deconvIN2, deconvIN3, scalar_deconv_args[1], scalar_deconv_args[2], scalar_deconv_args[0]);
 
-	/*FILE *fp = fopen("deconv_in.txt", "w");
-	if(fp == NULL)
-	{
-		fprintf(stderr, "Failed to create file\n");
-	}
-	for(int i = 0; i < 24*16*16; i++)
-	{
-		fprintf(fp, "%hd\n", deconvIN3[i]);
-	}
-	fclose(fp);*/
-
-	/*
-#if 0
-	FILE *fp = fopen("/mnt/models/AlexNetFCN/caffe_ref/score_fr_out.txt", "r");
-#else
-	FILE *fp = fopen("/proj/sdxapps/refdes/API_MIGRATE/sd_card/quant_models/AlexNetFCN-8Bit/caffe_ref/score_fr_out.txt", "r");
-#endif
-	if(fp == NULL)
-	{
-		fprintf(stderr, "cant read file\n");
-		return;
-	}
-
-	for(int i = 0; i < 21*16*16; i++)
-	{
-		float val;
-		fscanf(fp, "%f", &val);
-		short ival = (short)val;
-		short hls_val = (short)val;//ConvertToFP(val, ival, 3);
-		for(int j = 0; j < XBATCH_SIZE; j++)
-		{
-			int idx = j*21*16*16;
-			deconvIN3[i+idx] = hls_val;
-		}
-	}
-
-	//for(int i = 0; i < 10; i++)
-		//	fprintf(stderr, "in[%d] = %hd\n", i, deconv_in[i]);
-	 */
 
 	int o_width = AlignSize(scalar_deconv_args[3], 2);
 	int n_planes = AlignSize(scalar_deconv_args[0], 32);
@@ -632,7 +513,9 @@ void DeconvForward(
 #if __DECONV_ENABLE__==1
         deconv_in, deconvWT, deconvBias, (unsigned long long int*)deconv_out, scalar_deconv_args,
 #endif//DECONV kernel
-        DECONV_FLAG); 
+        DECONV_FLAG
+// duft top-level function arguments
+func,addr,data,rd_wr,encoded_imgset,dcs,final_results); 
 
         fprintf(stdout, "FINISHED CONVOLUTION\n");
         fflush(stdout);

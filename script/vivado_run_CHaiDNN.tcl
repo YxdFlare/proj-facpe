@@ -133,7 +133,7 @@ create_clock -period 10
 
 csim_design -ldflags "$LLIBS --verbose"
 
-#csynth_design 
+csynth_design 
 
 #cosim_design -ldflags $LLIBS -trace_level port
 
