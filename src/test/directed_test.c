@@ -1,12 +1,19 @@
 #include "type.h"
 
-u32 list[16] = {
-  0x00000000,0x72160722,0xdeadbeef,0x00000001,
-  0x12345678,0x00c0ffee,0x111222dd,0xffffffff,
-  0xabcdabcd,0x14725836,0x99999999,0x12015479
+u32 list[10] = {
+    0x72160722,
+    0x00000000,
+    0x12345678,
+    0xdeadbeef,
+    0x00c0ffee,
+    0xfaceface,
+    0x1a2b3c4d,
+    0x14789523,
+    0x19970119,
+    0x00001949,
 };
 
 u32 test_inputgen(int index)
 {
-  return list[index % 16];
+  return list[index % 10];
 }

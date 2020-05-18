@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ----------------------------------------------------*/
 
-#include "/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/Vivado/2018.2/include/gmp.h"
-#include "/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/Vivado/2018.2/include/mpfr.h"
+#include "/opt/xilinx/Xilinx_Vivado_vitis_2019.2/Vivado/2019.2/include/gmp.h"
+#include "/opt/xilinx/Xilinx_Vivado_vitis_2019.2/Vivado/2019.2/include/mpfr.h"
 
-#ifdef __SDSOC
+#if 1
+//#ifdef __SDSOC
 #include "../conv/include/xi_conv_config.h"
 #endif
 
@@ -133,62 +134,49 @@ int DnnWrapper(
 #endif//DECONV kernel
         int flag,
 // duft top-level function arguments
-int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1]        
+int func, u32 addr, u32 data, int rd_wr, u32 dcs[MAX_LATENCY*DUMP_NBR],u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], float final_results[MAX_LATENCY-1]        
         ) 
-{
+{ 
+  int ret_value = 0;
   if (func == CHAI) {
     #if __CONV_ENABLE__==1
       if (flag == CONV_FLAG) {
-    #if __SDSOC
-      #pragma SDS async(1)
-    #endif
-
-          XiConvolutionTop(weights1, weights2,
-    #if (XI_KER_PROC==16 || (XI_64BIT_PORT_EN==1 && XI_KER_PROC==8))
-                  weights3, weights4,
-    #endif
-                  output1,
-    #if !XI_SINGLE_IO_PORT_EN
-              output2,
-    #endif
-              input_other1,
-    #if !XI_SINGLE_IO_PORT_EN
-              input_other2,
-    #endif
-              input_1st, bias,
-    #if !XI_DISABLE_BN
-              input_norm2, input_norm3,
-    #endif
-              istg_out1,
-    #if !XI_SINGLE_IO_PORT_EN
-              istg_out2,
-    #endif
-              scalar_conv_args);
+        XiConvolutionTop(weights1, weights2,
+        #if (XI_KER_PROC==16 || (XI_64BIT_PORT_EN==1 && XI_KER_PROC==8))
+                      weights3, weights4,
+        #endif
+                      output1,
+        #if !XI_SINGLE_IO_PORT_EN
+                  output2,
+        #endif
+                  input_other1,
+        #if !XI_SINGLE_IO_PORT_EN
+                  input_other2,
+        #endif
+                  input_1st, bias,
+        #if !XI_DISABLE_BN
+                  input_norm2, input_norm3,
+        #endif
+                  istg_out1,
+        #if !XI_SINGLE_IO_PORT_EN
+                  istg_out2,
+        #endif
+                  scalar_conv_args);
       }
     #endif//CONV kernel
     #if __POOL_ENABLE__==1
       if (flag == POOL_FLAG) {
-    #if __SDSOC
-      #pragma SDS async(2)
-    #endif
-
         PoolTop(in1,in2,out1,out2, wts, scalar_pool_args);
       }
     #endif//POOL kernel
     #if __DECONV_ENABLE__==1
       if (flag == DECONV_FLAG) {
-    #if __SDSOC
-      #pragma SDS async(3)
-    #endif
-
         XiDeconvTop(deconvIN, deconvWT, deconvBias, deconvIDout, scalar_deconv_args);
       }
     #endif//DECONV kernel
-
-    return 0;
   }
   else {
-    return top(func,addr,data,rd_wr,encoded_imgset,dcs,final_results);
+    ret_value =  top(func,addr,data,rd_wr,dcs,encoded_imgset,final_results);
   }
-  
+  return ret_value;
 }

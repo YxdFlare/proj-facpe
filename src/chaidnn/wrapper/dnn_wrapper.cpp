@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ----------------------------------------------------*/
 
-#include "/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/Vivado/2018.2/include/gmp.h"
-#include "/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/Vivado/2018.2/include/mpfr.h"
+#include "/opt/xilinx/Xilinx_Vivado_vitis_2019.2/Vivado/2019.2/include/gmp.h"
+#include "/opt/xilinx/Xilinx_Vivado_vitis_2019.2/Vivado/2019.2/include/mpfr.h"
 
 #ifdef __SDSOC
 #include "../conv/include/xi_conv_config.h"

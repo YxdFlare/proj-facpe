@@ -17,6 +17,8 @@ limitations under the License.
 #include "../../src/inc/wrapper_constants.h"
 #include "../../src/inc/top_constants.h"
 #include "../../src/inc/type.h"
+#include <iostream>
+#include <iomanip>
 
 //# Checks Dependence of a layer
 bool chkDeps(std::vector<bool> &layerDone, std::vector<layerID> &previous)
@@ -43,15 +45,14 @@ int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*
 	{
 		fprintf(stderr, "Failed to read handle\n");
 	}
-	
+	std::cerr << "[CHAI] (xiExec) CHai Handle at : " << hex << handle << std::endl;
 	chaihandle_t *chaihandle_info = (chaihandle*)handle;
-	std::vector<xChangeLayer> *hwQueue = chaihandle_info->JobQueue;
-	
+	std::vector<xChangeLayer> * hwQueue = chaihandle_info->JobQueue;   // KANAMEMOD
+	std::cerr << "[CHAI] (xiExec) CHai HWQueue at : " << hex << hwQueue << std::endl;
+
     //# Number of layers to be scheduled
     uint16_t totalLayers = hwQueue[0].size();
     
-	//# Number of layers to be scheduled
-	// uint16_t totalLayers = hwQueue[0].size();
 	if(totalLayers <= 0)
 	{
 		std::cerr << "\n[ERROR] Invalid Queue size !" << std::endl;
@@ -65,7 +66,8 @@ int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*
 	}
 
 	/* Assigning user's input and output pointers to scheduler jobqueue */
-	if((hwQueue[0][0].kernType == CONV))// && (layer1_or_not == 1))
+  std::cerr << "[CHAI] (xiExec) Original CHai INPUT at : " << hex << hwQueue[0][0].in_ptrs[2];
+	if((hwQueue[0][0].kernType == CONV))
 	{
 		hwQueue[0][0].in_ptrs[2] = (IO_DATA_TYPE *)input[0];
 	}
@@ -76,15 +78,18 @@ int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*
 			hwQueue[0][0].in_ptrs[i] = (IO_DATA_TYPE *)input[i];
 		}
 	}
+  std::cerr << ", Modified to : " << hex << hwQueue[0][0].in_ptrs[2] << std::endl;
 
+  std::cerr << "[CHAI] (xiExec) CHai INPUT at : " << hex << hwQueue[0][0].in_ptrs[2] << std::endl;
 	//# Last layer index
 	uint16_t lastLayerIdx = totalLayers - 1;
 
+  std::cerr << "[CHAI] (xiExec) Original CHai OUTPUT at : " << hex << hwQueue[0][lastLayerIdx].out_ptrs[0];
 	for(int i = 0; i < output.size(); i++)
 	{
 		hwQueue[0][lastLayerIdx].out_ptrs[i] = output[i];
 	}
-
+  std::cerr << ", Modified to : " << hex << hwQueue[0][lastLayerIdx].out_ptrs[0] << std::endl;
 
 	//# Layer-wise Sequence IDs
 	std::vector<int> convSeq;
@@ -307,7 +312,7 @@ int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*
 #endif
 							(INT_TYPE *)hwQueue[ImgId][whichConv].params,
 // duft top-level function arguments
-func,addr,data,rd_wr,encoded_imgset,dcs,final_results					
+func,addr,data,rd_wr,dcs,encoded_imgset,final_results					
           );
 
 					convImgId = ImgId; 
@@ -375,20 +380,6 @@ func,addr,data,rd_wr,encoded_imgset,dcs,final_results
 #if LAYERWISE_PERFORMANCE
 				hwQueue[ImgId][whichFc].startclk = sds_clock_counter();
 #endif
-
-#if 0
-					//# Call FC wrapper
-					FcForward(
-							(CHAR_TYPE*)hwQueue[ImgId][whichFc].wts_ptrs[0],
-							(CHAR_TYPE*)hwQueue[ImgId][whichFc].wts_ptrs[1],
-							(SHORT_TYPE *)hwQueue[ImgId][whichFc].in_ptrs[0],
-							(SHORT_TYPE *)hwQueue[ImgId][whichFc].in_ptrs[1],
-							(SHORT_TYPE *)hwQueue[ImgId][whichFc].in_ptrs[2],
-							(SHORT_TYPE *)hwQueue[ImgId][whichFc].bias_ptr,
-							(SHORT_TYPE *)hwQueue[ImgId][whichFc].out_ptrs[0],
-							(INT_TYPE*)hwQueue[ImgId][whichFc].params);
-#endif
-
 
 					//# Call FC wrapper
 					SwFcForward(
@@ -755,7 +746,8 @@ func,addr,data,rd_wr,encoded_imgset,dcs,final_results);
 						(CHAR_TYPE*)hwQueue[convImgId][whichConv].out_ptrs[3],
 #endif
 						(INT_TYPE *)hwQueue[convImgId][whichConv].params,
-            CHAI,0,0,0,0,0,0
+            // duft top-level function arguments
+func,addr,data,rd_wr,dcs,encoded_imgset,final_results
 				);
 
 #ifdef __SDSOC

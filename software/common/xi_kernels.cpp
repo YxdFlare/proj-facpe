@@ -17,11 +17,10 @@ limitations under the License.
 // NOTE: xi_kernels_mod.cpp is the current version used for xi_kernels.cpp.
 // xi_kernels_mod_old.cpp is the old Secure-CNN project's version
 // xi_kernels_old.cpp is the original version from Xilinx's CHaiDNN repository
+#include "/opt/xilinx/Xilinx_Vivado_vitis_2019.2/Vivado/2019.2/include/gmp.h"		
+#include "/opt/xilinx/Xilinx_Vivado_vitis_2019.2/Vivado/2019.2/include/mpfr.h"
 
-#include "/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/Vivado/2018.2/include/gmp.h"		
-#include "/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/Vivado/2018.2/include/mpfr.h"
-
-//#include "../../design/conv/include/xi_conv_config.h"
+#include "../../design/conv/include/xi_conv_config.h"
 
 #ifndef _XI_KERNELS_HPP_
 #define _XI_KERNELS_HPP_
@@ -69,46 +68,46 @@ limitations under the License.
 // Global variables to pass into each "[Layer_Name}Forward()" function for layer parameters that are not applicable
 
 		// Convolution parameter placeholders in DnnWrapper 
-                CHAR_TYPE *weights1Temp = NULL;
-		CHAR_TYPE *weights2Temp = NULL;
+    CHAR_TYPE *  weights1Temp = NULL;
+		CHAR_TYPE *  weights2Temp = NULL;
 #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
-                CHAR_TYPE *weights3Temp = NULL;
-		CHAR_TYPE *weights4Temp = NULL;
+    CHAR_TYPE *  weights3Temp = NULL;
+		CHAR_TYPE *  weights4Temp = NULL;
 #endif
-                CHAR_TYPE *output1Temp = NULL;
+    CHAR_TYPE *  output1Temp = NULL;
 #if !SINGLE_IO_PORT
-                CHAR_TYPE *output2Temp = NULL;
+    CHAR_TYPE *  output2Temp = NULL;
 #endif
-                CHAR_TYPE *input_other1Temp = NULL;
+    CHAR_TYPE *  input_other1Temp = NULL;
 #if !SINGLE_IO_PORT
-                CHAR_TYPE *input_other2Temp = NULL;
+    CHAR_TYPE *  input_other2Temp = NULL;
 #endif
-                CHAR_TYPE *input_1stTemp = NULL;
-		SHORT_TYPE *biasTemp = NULL;
+    CHAR_TYPE *  input_1stTemp = NULL;
+		SHORT_TYPE *  biasTemp = NULL;
 #if !DISABLE_BN
-                CHAR_TYPE *input_norm2Temp = NULL;
-		CHAR_TYPE *input_norm3Temp = NULL;
+    CHAR_TYPE *  input_norm2Temp = NULL;
+		CHAR_TYPE *  input_norm3Temp = NULL;
 #endif
-                CHAR_TYPE *istg_out1Temp = NULL;
+    CHAR_TYPE *  istg_out1Temp = NULL;
 #if !SINGLE_IO_PORT
-                CHAR_TYPE *istg_out2Temp = NULL;
+    CHAR_TYPE *  istg_out2Temp = NULL;
 #endif
-                int *scalar_conv_argsTemp = NULL;
+    int *  scalar_conv_argsTemp = NULL;
 
 		// Pooling placeholders in DnnWrapper
-		SHORT_TYPE *pool_inTemp = NULL;
-		SHORT_TYPE *pool_outTemp = NULL;
-                SHORT_TYPE *pool_in1Temp = NULL;
-		SHORT_TYPE *pool_out1Temp = NULL;
-                CHAR_TYPE * wtsTemp = NULL;
-                int *scalar_pool_argsTemp = NULL;
+		SHORT_TYPE *  pool_inTemp = NULL;
+		SHORT_TYPE *  pool_outTemp = NULL;
+    SHORT_TYPE *  pool_in1Temp = NULL;
+		SHORT_TYPE *  pool_out1Temp = NULL;
+    CHAR_TYPE *   wtsTemp = NULL;
+    int *         scalar_pool_argsTemp = NULL;
 
 		// Deconvolution placeholders in DnnWrapper
-		short* deconv_inTemp = NULL; // deconvIN3 parameter modified and passed in
-                short* deconvWTTemp = NULL;
-                short* deconvBiasTemp = NULL;
-		int* deconv_outTemp = NULL; // deconvIDout parameter modified and passed in
-                int *scalar_deconv_argsTemp = NULL;
+		short*   deconv_inTemp = NULL; // deconvIN3 parameter modified and passed in
+    short*   deconvWTTemp = NULL;
+    short*   deconvBiasTemp = NULL;
+		int*     deconv_outTemp = NULL; // deconvIDout parameter modified and passed in
+    int *    scalar_deconv_argsTemp = NULL;
 
 int DnnWrapper( 		
 #if __CONV_ENABLE__==1		
@@ -146,7 +145,7 @@ int DnnWrapper(
 #endif//DECONV kernel		
         int flag,
 // duft top-level function arguments
-int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1]
+int func, u32 addr, u32 data, int rd_wr, u32 dcs[MAX_LATENCY*DUMP_NBR],u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], float final_results[MAX_LATENCY-1]
 );		
 
 
@@ -173,8 +172,24 @@ void ConvolutionForward(
 #endif
 		int *scalar_conv_args,
 // duft top-level function arguments
-int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1])
+int func, u32 addr, u32 data, int rd_wr, u32 dcs[MAX_LATENCY*DUMP_NBR],u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], float final_results[MAX_LATENCY-1])
 {
+  // cast to volatile pointers 
+    CHAR_TYPE *   weights1_v          = weights1; 
+    CHAR_TYPE *   weights2_v          = weights2;
+    CHAR_TYPE *   weights3_v          = weights3; 
+    CHAR_TYPE *   weights4_v          = weights4;
+    CHAR_TYPE *   output1_v           = output1;
+    CHAR_TYPE *   output2_v           = output2;
+    CHAR_TYPE *   input_other1_v      = input_other1;
+    CHAR_TYPE *   input_other2_v      = input_other2;
+    CHAR_TYPE *   input_1st_v         = input_1st; 
+    SHORT_TYPE *  bias_v              = bias;
+    CHAR_TYPE *   input_norm2_v       = input_norm2; 
+    CHAR_TYPE *   input_norm3_v       = input_norm3;
+    CHAR_TYPE *   istg_out1_v         = istg_out1;
+    CHAR_TYPE *   istg_out2_v         = istg_out2;
+    int *         scalar_conv_args_v  = scalar_conv_args;
 
 	//Valid for FC Layers using conv kernel
 	if(scalar_conv_args[34] == OPCODE_FC2CONV)
@@ -212,46 +227,68 @@ int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*
 
 	for(int loop_iter=0;loop_iter<pool_split_cnt;loop_iter++)
 	{
+    fprintf(stderr, "[CHAI] (ConvlutionForward) START CONVOLUTION : (I@{0x%x},O@{0x%x}) :: ",input_other1,output1);
+    fprintf(stderr, "[%i,%i]-->[%i,%i]\n",scalar_conv_args[0],scalar_conv_args[1], scalar_conv_args[2], scalar_conv_args[3]);    
+    #ifdef USER_DEBUG
+      fprintf(stderr,"\tArgument table : \n");
+      fprintf(stderr,"\t\tl_opcode              %i\n",scalar_conv_args[34]);
+      fprintf(stderr,"\t\tsuspect X             0x%x @{%p}\n",scalar_conv_args[19],&scalar_conv_args[19]);
+      fprintf(stderr,"\t\tinput_1st             %p\n",input_1st_v);
+      fprintf(stderr,"\t\tinput_other1          %p\n",input_other1_v);
+      fprintf(stderr,"\t\tinput_other2          %p\n",input_other2_v);
+      fprintf(stderr,"\t\toutput1               %p\n",output1_v);
+      fprintf(stderr,"\t\toutput2               %p\n",output2_v);
+      fprintf(stderr,"\t\tweights1              %p\n",weights1_v);
+      fprintf(stderr,"\t\tweights2              %p\n",weights2_v);
+      fprintf(stderr,"\t\tweights3              %p\n",weights3_v);
+      fprintf(stderr,"\t\tweights4              %p\n",weights4_v);
+      fprintf(stderr,"\t\tbias                  %p\n",bias_v);
+      fprintf(stderr,"\t\tistg_out1             %p\n",istg_out1_v);
+      fprintf(stderr,"\t\tistg_out2             %p\n",istg_out2_v);
+      fprintf(stderr,"\t\tscalar_conv_args      %p\n",scalar_conv_args_v);
+      fprintf(stderr,"\t\tCONV_FLAG             0x%x\n",CONV_FLAG);
+      fflush(stderr);
+    #endif
 
 	DnnWrapper(
-#if __CONV_ENABLE__==1
-        (GMEM_WEIGHTTYPE *)weights1,(GMEM_WEIGHTTYPE *)weights2,
-#if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
-				(GMEM_WEIGHTTYPE *)weights3,(GMEM_WEIGHTTYPE *)weights4,
-#endif
-				(GMEM_OUTTYPE *)output1,
-#if !SINGLE_IO_PORT
-				(GMEM_OUTTYPE *)output2,
-#endif
-				(GMEM_INTYPE_OTHER *)input_other1,
-#if !SINGLE_IO_PORT
-				(GMEM_INTYPE_OTHER *)input_other2,
-#endif
-				(GMEM_INPUTTYPE *)input_1st, (GMEM_BIASTYPE *)bias,
-#if !DISABLE_BN
-				(GMEM_INPUTTYPE *)input_norm2, (GMEM_INPUTTYPE *)input_norm3,
-#endif
-				(GMEM_INPUTTYPE *)istg_out1,
-#if !SINGLE_IO_PORT
-				(GMEM_INPUTTYPE *)istg_out2,
-#endif
-				scalar_conv_args,
-#endif//CONV kernel
-#if __POOL_ENABLE__==1
-        (GMEM_MAXPOOLTYPE *)pool_inTemp, (GMEM_MAXPOOLTYPE *)pool_in1Temp,
-                          (GMEM_MAXPOOLTYPE *)pool_outTemp, (GMEM_MAXPOOLTYPE *)pool_out1Temp,
-                          (GMEM_MAXPOOLTYPE*) wtsTemp,
-                    scalar_pool_argsTemp,
-#endif//POOL kernel
-#if __DECONV_ENABLE__==1
-        deconv_inTemp, deconvWTTemp, deconvBiasTemp, (unsigned long long int*)deconv_outTemp, scalar_deconv_argsTemp,
-#endif//DECONV kernel
-        CONV_FLAG,
-// duft top-level function arguments
-func,addr,data,rd_wr,encoded_imgset,dcs,final_results);
+    #if __CONV_ENABLE__==1
+            (GMEM_WEIGHTTYPE *)weights1_v,(GMEM_WEIGHTTYPE *)weights2_v,
+    #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+            (GMEM_WEIGHTTYPE *)weights3_v,(GMEM_WEIGHTTYPE *)weights4_v,
+    #endif
+            (GMEM_OUTTYPE *)output1_v,
+    #if !SINGLE_IO_PORT
+            (GMEM_OUTTYPE *)output2_v,
+    #endif
+            (GMEM_INTYPE_OTHER *)input_other1_v,
+    #if !SINGLE_IO_PORT
+            (GMEM_INTYPE_OTHER *)input_other2_v,
+    #endif
+            (GMEM_INPUTTYPE *)input_1st_v, (GMEM_BIASTYPE *)bias_v,
+    #if !DISABLE_BN
+            (GMEM_INPUTTYPE *)input_norm2_v, (GMEM_INPUTTYPE *)input_norm3_v,
+    #endif
+            (GMEM_INPUTTYPE *)istg_out1_v,
+    #if !SINGLE_IO_PORT
+            (GMEM_INPUTTYPE *)istg_out2_v,
+    #endif
+            scalar_conv_args_v,
+    #endif//CONV kernel
+    #if __POOL_ENABLE__==1
+            (GMEM_MAXPOOLTYPE *)pool_inTemp, (GMEM_MAXPOOLTYPE *)pool_in1Temp,
+            (GMEM_MAXPOOLTYPE *)pool_outTemp, (GMEM_MAXPOOLTYPE *)pool_out1Temp,
+            (GMEM_MAXPOOLTYPE*) wtsTemp,
+            scalar_pool_argsTemp,
+    #endif//POOL kernel
+    #if __DECONV_ENABLE__==1
+            deconv_inTemp, deconvWTTemp, deconvBiasTemp, (unsigned long long int*)deconv_outTemp, scalar_deconv_argsTemp,
+    #endif//DECONV kernel
+            CONV_FLAG,
+    // duft top-level function arguments
+    func,addr,data,rd_wr,dcs,encoded_imgset,final_results);
 
-	fprintf(stdout, "FINISHED CONVOLUTION\n");
-    	fflush(stdout);
+	fprintf(stderr, "[CHAI] (ConvlutionForward) FINISHED CONVOLUTION\n");
+  fflush(stderr);
 
 		if( (scalar_conv_args[34] == OPCODE_POOL2CONV) || (scalar_conv_args[34] == OPCODE_AVRPOOL2CONV) )
 		{
@@ -281,49 +318,50 @@ void PoolForward(
 		CHAR_TYPE * wts,
 		int *scalar_pool_args,
     // duft top-level function arguments
-int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1]
+int func, u32 addr, u32 data, int rd_wr, u32 dcs[MAX_LATENCY*DUMP_NBR],u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], float final_results[MAX_LATENCY-1]
 )
 {
+  fprintf(stderr, "STARTING POOL\n");
+	fflush(stderr);
+// 	DnnWrapper( 
+// #if __CONV_ENABLE__==1
+//         (GMEM_WEIGHTTYPE *)weights1Temp,(GMEM_WEIGHTTYPE *)weights2Temp,
+// #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+//                                 (GMEM_WEIGHTTYPE *)weights3Temp,(GMEM_WEIGHTTYPE *)weights4Temp,
+// #endif
+//                                 (GMEM_OUTTYPE *)output1Temp,
+// #if !SINGLE_IO_PORT
+//                                 (GMEM_OUTTYPE *)output2Temp,
+// #endif
+//                                 (GMEM_INTYPE_OTHER *)input_other1Temp,
+// #if !SINGLE_IO_PORT
+//                                 (GMEM_INTYPE_OTHER *)input_other2Temp,
+// #endif
+//                                 (GMEM_INPUTTYPE *)input_1stTemp, (GMEM_BIASTYPE *)biasTemp,
+// #if !DISABLE_BN
+//                                 (GMEM_INPUTTYPE *)input_norm2Temp, (GMEM_INPUTTYPE *)input_norm3Temp,
+// #endif
+//                                 (GMEM_INPUTTYPE *)istg_out1Temp,
+// #if !SINGLE_IO_PORT
+//                                 (GMEM_INPUTTYPE *)istg_out2Temp,
+// #endif
+//                                 scalar_conv_argsTemp,
+// #endif//CONV kernel
+// #if __POOL_ENABLE__==1
+//         (GMEM_MAXPOOLTYPE *)pool_in, (GMEM_MAXPOOLTYPE *)pool_in1,
+// 			  (GMEM_MAXPOOLTYPE *)pool_out, (GMEM_MAXPOOLTYPE *)pool_out1,
+// 			  (GMEM_MAXPOOLTYPE*) wts,
+// 		    scalar_pool_args,
+// #endif//POOL kernel
+// #if __DECONV_ENABLE__==1
+//         deconv_inTemp, deconvWTTemp, deconvBiasTemp, (unsigned long long int*)deconv_outTemp, scalar_deconv_argsTemp,
+// #endif//DECONV kernel
+//         POOL_FLAG,
+//         // duft top-level function arguments
+// func,addr,data,rd_wr,dcs,encoded_imgset,final_results);
 
-	DnnWrapper( 
-#if __CONV_ENABLE__==1
-        (GMEM_WEIGHTTYPE *)weights1Temp,(GMEM_WEIGHTTYPE *)weights2Temp,
-#if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
-                                (GMEM_WEIGHTTYPE *)weights3Temp,(GMEM_WEIGHTTYPE *)weights4Temp,
-#endif
-                                (GMEM_OUTTYPE *)output1Temp,
-#if !SINGLE_IO_PORT
-                                (GMEM_OUTTYPE *)output2Temp,
-#endif
-                                (GMEM_INTYPE_OTHER *)input_other1Temp,
-#if !SINGLE_IO_PORT
-                                (GMEM_INTYPE_OTHER *)input_other2Temp,
-#endif
-                                (GMEM_INPUTTYPE *)input_1stTemp, (GMEM_BIASTYPE *)biasTemp,
-#if !DISABLE_BN
-                                (GMEM_INPUTTYPE *)input_norm2Temp, (GMEM_INPUTTYPE *)input_norm3Temp,
-#endif
-                                (GMEM_INPUTTYPE *)istg_out1Temp,
-#if !SINGLE_IO_PORT
-                                (GMEM_INPUTTYPE *)istg_out2Temp,
-#endif
-                                scalar_conv_argsTemp,
-#endif//CONV kernel
-#if __POOL_ENABLE__==1
-        (GMEM_MAXPOOLTYPE *)pool_in, (GMEM_MAXPOOLTYPE *)pool_in1,
-			  (GMEM_MAXPOOLTYPE *)pool_out, (GMEM_MAXPOOLTYPE *)pool_out1,
-			  (GMEM_MAXPOOLTYPE*) wts,
-		    scalar_pool_args,
-#endif//POOL kernel
-#if __DECONV_ENABLE__==1
-        deconv_inTemp, deconvWTTemp, deconvBiasTemp, (unsigned long long int*)deconv_outTemp, scalar_deconv_argsTemp,
-#endif//DECONV kernel
-        POOL_FLAG,
-        // duft top-level function arguments
-func,addr,data,rd_wr,encoded_imgset,dcs,final_results);
-
-        fprintf(stdout, "FINISHED POOLING\n");
-        fflush(stdout);
+        fprintf(stderr, "FINISHED POOLING\n");
+        fflush(stderr);
 }
 
 int SgemvWrapper(GMEM_INTYPE_FC *A1, GMEM_INTYPE_FC *A2,
@@ -401,12 +439,16 @@ void SwFcForward(IO_DATA_TYPE *inp1, IO_DATA_TYPE *inp2, SW_FC_DATA_TYPE *inp3, 
 		inp1  = (IO_DATA_TYPE *)inp3;
 	}
 #endif
-
-	SwFcWrapper((SW_FC_DATA_TYPE *)inp1, fc_wgts, fc_bias, fc_out, scalar_fc_args);
+  fprintf(stderr, "[CHAI] (SwFcForward) START DENSE : (I@{0x%x,...},O@{0x%x,...}) :: ",inp1,fc_out);
+  fprintf(stderr, "[%i]-->[%i]\n",scalar_fc_args[1],scalar_fc_args[2]);
+  fflush(stderr);
+	  SwFcWrapper((SW_FC_DATA_TYPE *)inp1, fc_wgts, fc_bias, fc_out, scalar_fc_args);
+  fprintf(stderr, "[CHAI] (SwFcForward) FINISHED DENSE\n");
+  fflush(stderr);
 
 	if(scalar_fc_args[4] == 1)  //check for relu flag
 	{
-		reluWrapper(fc_out, fc_out, scalar_fc_args);
+	  reluWrapper(fc_out, fc_out, scalar_fc_args);
 	}
 }
 
@@ -455,7 +497,7 @@ void DeconvForward(
 		short* deconvBias, int* deconvIDout,
 		int *scalar_deconv_args,
 // duft top-level function arguments
-int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], u32 dcs[MAX_LATENCY*DUMP_NBR], float final_results[MAX_LATENCY-1]
+int func, u32 addr, u32 data, int rd_wr, u32 dcs[MAX_LATENCY*DUMP_NBR],u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], float final_results[MAX_LATENCY-1]
 )
 {
 	//# Re-arrage previous layer output for Deconv input
@@ -477,8 +519,8 @@ int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*
 		DeconvWrapper(deconv_in, deconvWT, deconvBias, (unsigned long long int*)deconv_out, scalar_deconv_args);
 */
 
-	fprintf(stdout, "STARTING DECONVOLUTION\n");
-	fflush(stdout);
+	fprintf(stderr, "STARTING DECONVOLUTION\n");
+	fflush(stderr);
 
 	DnnWrapper( 
 #if __CONV_ENABLE__==1
@@ -515,10 +557,10 @@ int func, u32 addr, u32 data, int rd_wr,u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*
 #endif//DECONV kernel
         DECONV_FLAG
 // duft top-level function arguments
-func,addr,data,rd_wr,encoded_imgset,dcs,final_results); 
+func,addr,data,rd_wr,dcs,encoded_imgset,final_results); 
 
-        fprintf(stdout, "FINISHED CONVOLUTION\n");
-        fflush(stdout);
+        fprintf(stderr, "FINISHED CONVOLUTION\n");
+        fflush(stderr);
 #endif
 
 #if 0

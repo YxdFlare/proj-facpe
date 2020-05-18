@@ -20,7 +20,9 @@
 // Top level
 //-------------------------------------------------------------------------------
 
-int top(int func, u32 addr, u32 data, int rd_wr, u32 dcs[MAX_LATENCY*DUMP_NBR], u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], float final_results[MAX_LATENCY-1])
+
+int top(int func, u32 addr, u32 data, int rd_wr, u32 dcs[MAX_LATENCY*DUMP_NBR], 
+        u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], float final_results[MAX_LATENCY-1])
 {
   int DUFT_return = 0;
   switch (func) {
@@ -30,9 +32,9 @@ int top(int func, u32 addr, u32 data, int rd_wr, u32 dcs[MAX_LATENCY*DUMP_NBR], 
   case ENCODE:
     batch_encode(dcs,encoded_imgset);
     break;
-  case PROCESS:
-    dataproc_avg(encoded_imgset,final_results);
-    break;  
+  // case PROCESS:
+  //   dataproc_avg(encoded_imgset,final_results);
+  //   break;  
   default:
     break;
   } 

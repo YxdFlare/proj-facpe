@@ -55,18 +55,21 @@
 #define MAX_LATENCY 9
 #define DUT_ILEN 32
 #define DUT_OLEN 32
-#define DUT_IACK 1
-#define DFT_IACK 1
+#define DUT_IACK 2
+#define DFT_IACK 2
 
 // DUFT operations
 #define WRITE  0
 #define READ   1
+#define RESET  2
 
 // encoder dimensions
 #define CH_NBR 3
 #define SIZE   6
 
-// interface
-#define IO_LATENCY 3
+// interfaces
+#define TRANSACTION_INTERVAL 2
+#define PRE_IO_LATENCY 3
+#define POST_IO_LATENCY (2 + TRANSACTION_INTERVAL)
 
 #endif

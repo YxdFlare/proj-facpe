@@ -1,0 +1,100 @@
+layer {
+  name: "input_0"
+  type: "Input"
+  top: "input_0"
+  input_param {
+    shape {
+      dim: 1
+      dim: 3
+      dim: 6
+      dim: 6
+    }
+  }
+}
+layer {
+  name: "LAYER_0"
+  type: "Convolution"
+  bottom: "input_0"
+  top: "LAYER_0"
+  convolution_param {
+    num_output: 6
+    bias_term: true
+    group: 1
+    stride: 1
+    pad_h: 0
+    pad_w: 0
+    kernel_h: 3
+    kernel_w: 3
+  }
+  precision_param {
+    bw_layer_in: 8
+    bw_layer_out: 8
+    bw_params: 8
+    fl_layer_in: 2
+    fl_layer_out: 2
+    fl_params: 5
+  }
+}
+layer {
+  name: "LAYER_1"
+  type: "ReLU"
+  bottom: "LAYER_0"
+  top: "LAYER_0"
+}
+layer {
+  name: "LAYER_2"
+  type: "Pooling"
+  bottom: "LAYER_0"
+  top: "LAYER_2"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+    pad_h: 0
+    pad_w: 0
+  }
+  precision_param {
+    bw_layer_in: 8
+    bw_layer_out: 8
+    fl_layer_in: 2
+    fl_layer_out: 2
+  }
+}
+layer {
+  name: "LAYER_4"
+  type: "Reshape"
+  bottom: "LAYER_2"
+  top: "LAYER_4"
+  reshape_param {
+    shape {
+      dim: -1
+      dim: 24
+    }
+  }
+}
+layer {
+  name: "LAYER_5"
+  type: "InnerProduct"
+  bottom: "LAYER_4"
+  top: "LAYER_5"
+  inner_product_param {
+    num_output: 12
+    bias_term: true
+  }
+}
+layer {
+  name: "LAYER_6"
+  type: "ReLU"
+  bottom: "LAYER_5"
+  top: "LAYER_5"
+}
+layer {
+  name: "LAYER_7"
+  type: "InnerProduct"
+  bottom: "LAYER_5"
+  top: "LAYER_7"
+  inner_product_param {
+    num_output: 1
+    bias_term: true
+  }
+}

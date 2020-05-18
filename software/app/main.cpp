@@ -51,31 +51,45 @@ extern "C" {
 
 
 int DnnWrapper( 		
-ap_uint<128>*, ap_uint<128>*, 
-ap_uint<128>*, ap_uint<128>*, 
-ap_uint<128>*, 
-ap_uint<128>*, 
-ap_uint<128>*, 
-ap_uint<128>*, 
-unsigned long long*, unsigned long long*, 
-unsigned long long*, unsigned long long*,
-unsigned long long*, 
-unsigned long long*,  
-int*, 
-ap_uint<128>*, ap_uint<128>*, 
-ap_uint<128>*, ap_uint<128>*, 
-ap_uint<128>*, 
-int*, 
-int, 
-int, unsigned int, unsigned int, int, unsigned int*, unsigned int*, float*
-);
+  #if __CONV_ENABLE__==1		
+          GMEM_WEIGHTTYPE *weights1, GMEM_WEIGHTTYPE *weights2,		
+  #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))		
+          GMEM_WEIGHTTYPE *weights3, GMEM_WEIGHTTYPE *weights4,		
+  #endif		
+          GMEM_OUTTYPE *output1,		
+  #if !SINGLE_IO_PORT_EN		
+          GMEM_OUTTYPE *output2,		
+  #endif		
+          GMEM_INTYPE_OTHER *input_other1,		
+  #if !SINGLE_IO_PORT_EN		
+          GMEM_INTYPE_OTHER *input_other2,		
+  #endif		
+          GMEM_INPUTTYPE *input_1st, GMEM_BIASTYPE *bias,		
+  #if !DISABLE_BN		
+          GMEM_INPUTTYPE *input_norm2, GMEM_INPUTTYPE *input_norm3,		
+  #endif		
+          GMEM_INPUTTYPE *istg_out1,		
+  #if !SINGLE_IO_PORT_EN		
+          GMEM_INPUTTYPE *istg_out2,		
+  #endif		
+          int *scalar_conv_args,		
+  #endif //CONV kernel		
+  #if __POOL_ENABLE__==1		
+          GMEM_MAXPOOLTYPE *in1,GMEM_MAXPOOLTYPE *in2,		
+          GMEM_MAXPOOLTYPE *out1,GMEM_MAXPOOLTYPE *out2,		
+          GMEM_MAXPOOLTYPE *wts,		
+          int *scalar_pool_args,		
+  #endif//POOL kernel		
+  #if __DECONV_ENABLE__==1		
+          short* deconvIN, short* deconvWT, 		
+          short* deconvBias, unsigned long long int* deconvIDout, int *scalar_deconv_args,		
+  #endif//DECONV kernel		
+          int flag,
+// duft top-level function arguments
+int func, u32 addr, u32 data, int rd_wr, u32 dcs[MAX_LATENCY*DUMP_NBR],u32 encoded_imgset[(MAX_LATENCY-1)*SIZE*SIZE*CH_NBR], float final_results[MAX_LATENCY-1]
+);	
 
-RF _rf;
-u32 _dut_value[1];
-u32 _dut_state[1];
-int cycle_cnt = 0;
-
-#define ITEM_NBR 1
+#define ITEM_NBR 10
 #define RANDOM_TEST 0
 
 using namespace std;
@@ -119,6 +133,9 @@ int send_op(u32 operation, u32 target_state, int timer[1])
                 #endif//DECONV kernel
                         0,
   DUFT,OPCODE_BASE,operation,WRITE,0,0,0);
+  #ifdef USER_DEBUG
+    fprintf(stderr,"\t\t{wr(0x%x) > DUFT._rf.opcode}\n",operation);
+  #endif
   DnnWrapper(
                 #if __CONV_ENABLE__==1
                         (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
@@ -154,9 +171,12 @@ int send_op(u32 operation, u32 target_state, int timer[1])
                 #endif//DECONV kernel
                         0,
   DUFT,OPCODE_BASE,NONE,WRITE,0,0,0);
+  #ifdef USER_DEBUG
+    fprintf(stderr,"\t\t{wr(0x%x) > DUFT._rf.opcode}\n",NONE);
+  #endif
   u32 landed_state = INVALID_STATE;
-  while (landed_state != target_state) {
-    landed_state = (
+  while (landed_state != target_state) {  
+    landed_state = 
       DnnWrapper(
                 #if __CONV_ENABLE__==1
                         (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
@@ -191,11 +211,17 @@ int send_op(u32 operation, u32 target_state, int timer[1])
                         0, 0, 0, (unsigned long long int*)0, 0,
                 #endif//DECONV kernel
                         0,
-      DUFT,STATE_BASE,0,READ,0,0,0) & WRAPPER_FSM_CS);
+      DUFT,STATE_BASE,0,READ,0,0,0);
+    #ifdef USER_DEBUG
+      fprintf(stderr,"\t\t{rd(0x%x) < DUFT._rf.state}\n",landed_state); 
+    #endif
+    landed_state = landed_state & WRAPPER_FSM_CS;
     if (*timer < 1000)
       (*timer) ++;
     else {
-      printf("DUFT Response Timed Out! {op:%d =>%d, stuck in %d} ",operation,target_state,landed_state);
+      #ifdef USER_DEBUG
+        fprintf(stderr,"DUFT Response Timed Out! {op:%d =>%d, stuck in %d} ",operation,target_state,landed_state);
+      #endif
       return 1;
     }   
   }
@@ -204,8 +230,7 @@ int send_op(u32 operation, u32 target_state, int timer[1])
 
 int call_dut(u32 input, u32* output)
 {
-  int err = 0;
-  int tim = 0;
+  // reset DUFT
   DnnWrapper(               
                 #if __CONV_ENABLE__==1
                         (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
@@ -240,17 +265,155 @@ int call_dut(u32 input, u32* output)
                         0, 0, 0, (unsigned long long int*)0, 0,
                 #endif//DECONV kernel
                         0,                        
-  DUFT,DUT_OUT_BASE,0,READ,0,0,0);
-  return 0;  
+  DUFT,0,0,RESET,0,0,0);
+  #ifdef USER_DEBUG
+    fprintf(stderr,"\t\t{wr(RESET) > DUFT}\n");
+  #endif
+  int err = 0;
+  int tim = 0;
+  cerr << "\t[Write Input]\n";
+  DnnWrapper(               
+                #if __CONV_ENABLE__==1
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #endif
+                        (GMEM_OUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_OUTTYPE *)0,
+                #endif
+                        (GMEM_INTYPE_OTHER *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INTYPE_OTHER *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
+                #if !DISABLE_BN
+                        (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INPUTTYPE *)0,
+                #endif
+                        0,
+                #endif//CONV kernel
+                #if __POOL_ENABLE__==1
+                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE*) 0,
+                                    0,
+                #endif//POOL kernel
+                #if __DECONV_ENABLE__==1
+                        0, 0, 0, (unsigned long long int*)0, 0,
+                #endif//DECONV kernel
+                        0,                        
+  DUFT,DUT_IN_BASE,input,WRITE,0,0,0);
+  #ifdef USER_DEBUG
+    fprintf(stderr,"\t\t{wr(0x%x) > DUFT._rf.dut_in}\n",input);  
+  #endif
+  tim = 0;
+  cerr << "\t[Op INPUT]\n";
+  err = send_op(INPUT,INPUT_RDY,&tim); 
+  if(err) return err;
+  tim = 0;
+  cerr << "\t[Op RUN]\n";
+  err = send_op(RUN,OUTPUT_VAL,&tim);  
+  if(err) return err;
+  tim = 0;
+  cerr << "\t[Op ENDR]\n";
+  err = send_op(ENDR,IDLE,&tim);
+  if(err) return err;
+  cerr << "\t[Collect results]\n";
+  int result;
+  result = 
+    DnnWrapper(               
+                #if __CONV_ENABLE__==1
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #endif
+                        (GMEM_OUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_OUTTYPE *)0,
+                #endif
+                        (GMEM_INTYPE_OTHER *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INTYPE_OTHER *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
+                #if !DISABLE_BN
+                        (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INPUTTYPE *)0,
+                #endif
+                        0,
+                #endif//CONV kernel
+                #if __POOL_ENABLE__==1
+                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE*) 0,
+                                    0,
+                #endif//POOL kernel
+                #if __DECONV_ENABLE__==1
+                        0, 0, 0, (unsigned long long int*)0, 0,
+                #endif//DECONV kernel
+                        0,                        
+    DUFT,DUT_OUT_BASE,0,READ,0,0,0);
+  #ifdef USER_DEBUG
+    fprintf(stderr,"\t\t{rd(0x%x) < DUFT._rf.dut_out}\n",result);
+  #endif
+  *output = result;  
+  return 0;
 }
 
 int call_dft(u32 input,u32* dft_buf)
 {
+  // reset DUFT
+  DnnWrapper(               
+                #if __CONV_ENABLE__==1
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
+                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
+                #endif
+                        (GMEM_OUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_OUTTYPE *)0,
+                #endif
+                        (GMEM_INTYPE_OTHER *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INTYPE_OTHER *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
+                #if !DISABLE_BN
+                        (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
+                #endif
+                        (GMEM_INPUTTYPE *)0,
+                #if !SINGLE_IO_PORT
+                        (GMEM_INPUTTYPE *)0,
+                #endif
+                        0,
+                #endif//CONV kernel
+                #if __POOL_ENABLE__==1
+                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
+                                          (GMEM_MAXPOOLTYPE*) 0,
+                                    0,
+                #endif//POOL kernel
+                #if __DECONV_ENABLE__==1
+                        0, 0, 0, (unsigned long long int*)0, 0,
+                #endif//DECONV kernel
+                        0,                        
+  DUFT,0,0,RESET,0,0,0);
+  #ifdef USER_DEBUG
+    fprintf(stderr,"\t\t{wr(RESET) > DUFT}\n");
+  #endif
   int err = 0;
   int lat = 0;
   int i = 0;
   int tim = 0;
-
+  u32 dut_done = 0;
+  cerr << "\t[Write Input]\n";
   DnnWrapper(
                 #if __CONV_ENABLE__==1
                         (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
@@ -285,20 +448,28 @@ int call_dft(u32 input,u32* dft_buf)
                         0, 0, 0, (unsigned long long int*)0, 0,
                 #endif//DECONV kernel
                         0,                        
-    DUFT,DUT_IN_BASE,input,WRITE,0,0,0);
+  DUFT,DUT_IN_BASE,input,WRITE,0,0,0);
+  #ifdef USER_DEBUG
+    fprintf(stderr,"\t\t{wr(0x%x) > DUFT._rf.dut_in}\n",input);
+  #endif    
+
 
   tim = 0;
+  cerr << "\t[Op INPUT]\n";
   err = send_op(INPUT,INPUT_RDY,&tim);
-
+  
   if(err) return err;
   tim = 0;
+  cerr << "\t[Op TEST]\n";
   err = send_op(TEST,SCAN_RD,&tim);
-
+  
   if(err) return err;
   
   do {
-    for(i = 0; i < DUMP_NBR; i++)
-      *(dft_buf + lat * DUMP_NBR + i) = 
+    for(i = 0; i < DUMP_NBR; i++) {
+      cerr << "\t[Collect dut status]\n";
+      u32 dut_status;
+      dut_status = 
       DnnWrapper(
                 #if __CONV_ENABLE__==1
                         (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
@@ -334,12 +505,13 @@ int call_dft(u32 input,u32* dft_buf)
                 #endif//DECONV kernel
                         0,
       DUFT,DFT_OUT_BASE + i,0,READ,0,0,0);
-    tim = 0;
-    err = send_op(NEXT,SCAN_RD,&tim);
+      #ifdef USER_DEBUG
+        fprintf(stderr,"\t\t{rd(0x%x) < DUFT._rf.dft_out}\n",dut_status);
+      #endif
+      *(dft_buf + lat * DUMP_NBR + i) = dut_status;
+    }
 
-    if(err) return err;
-    lat++;
-  } while (!(
+    dut_done = 
       DnnWrapper(
                 #if __CONV_ENABLE__==1
                         (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
@@ -374,47 +546,24 @@ int call_dft(u32 input,u32* dft_buf)
                         0, 0, 0, (unsigned long long int*)0, 0,
                 #endif//DECONV kernel
                         0,
-      DUFT,STATE_BASE,0,READ,0,0,0) & DUT_OP_CM));
+      DUFT,STATE_BASE,0,READ,0,0,0);
+    #ifdef USER_DEBUG
+      fprintf(stderr,"\t\t{rd(0x%x) < DUFT._rf.state}\n",dut_done);
+    #endif
+    dut_done = dut_done & DUT_OP_CM;
+       
+    if(!dut_done) {
+      tim = 0;
+      cerr << "\t[Op NEXT]\n";
+      err = send_op(NEXT,SCAN_RD,&tim);
+      if(err) return err;
+      lat++;
+    }    
 
-  for(i = 0; i < DUMP_NBR; i++)
-    *(dft_buf + lat * DUMP_NBR + i) = 
-    DnnWrapper(
-                #if __CONV_ENABLE__==1
-                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
-                #if (KER_PROC==16 || (PORT_BITWIDTH_64BIT==1 && KER_PROC==8))
-                        (GMEM_WEIGHTTYPE *)0,(GMEM_WEIGHTTYPE *)0,
-                #endif
-                        (GMEM_OUTTYPE *)0,
-                #if !SINGLE_IO_PORT
-                        (GMEM_OUTTYPE *)0,
-                #endif
-                        (GMEM_INTYPE_OTHER *)0,
-                #if !SINGLE_IO_PORT
-                        (GMEM_INTYPE_OTHER *)0,
-                #endif
-                        (GMEM_INPUTTYPE *)0, (GMEM_BIASTYPE *)0,
-                #if !DISABLE_BN
-                        (GMEM_INPUTTYPE *)0, (GMEM_INPUTTYPE *)0,
-                #endif
-                        (GMEM_INPUTTYPE *)0,
-                #if !SINGLE_IO_PORT
-                        (GMEM_INPUTTYPE *)0,
-                #endif
-                        0,
-                #endif//CONV kernel
-                #if __POOL_ENABLE__==1
-                        (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
-                                          (GMEM_MAXPOOLTYPE *)0, (GMEM_MAXPOOLTYPE *)0,
-                                          (GMEM_MAXPOOLTYPE*) 0,
-                                    0,
-                #endif//POOL kernel
-                #if __DECONV_ENABLE__==1
-                        0, 0, 0, (unsigned long long int*)0, 0,
-                #endif//DECONV kernel
-                        0,
-    DUFT,DFT_OUT_BASE + i,0,READ,0,0,0);
+  } while (!dut_done);
+      
   tim = 0;
-
+  cerr << "\t[Op ENDT]\n";
   err = send_op(ENDT,IDLE,&tim);
 
   if(err) return err;
@@ -423,8 +572,8 @@ int call_dft(u32 input,u32* dft_buf)
 
 // CHaiDNN paths
 char* dirpath = "/home/yd383/proj-facpe/model";
-char* prototxt = "base1_c_qtz.prototxt";
-char* caffemodel = "base1_c.caffemodel";
+char* prototxt = "base2_c_qtz.prototxt";
+char* caffemodel = "base2_c.caffemodel";
 
 
 int main()
@@ -432,28 +581,42 @@ int main()
   //-------------------------------------------------------------------------------
   // DUFT
   //-------------------------------------------------------------------------------
-  cout << endl << endl << "IN MAIN : \n=================" << endl;
-  cout << "Initializing data structure (Memory allocation)" << endl;
-  cout << left;
+  cerr << endl << endl << "IN MAIN : \n=================" << endl;
+  cerr << "Initializing data structure (Memory allocation)" << endl;
+  cerr << left;
+  // used for print address of pointers
+  u32**  pp;
+  float**  ff;
   // define data structures (memory allocation)
-  /* ai */                  u32 test_inputs[ITEM_NBR];
-                            u32* test_inputs_ptr = (u32*)test_inputs;
-  cout << setw(22) << "    test inputs at "     << hex << test_inputs_ptr   << endl;
+  /* ai */                   u32 test_inputs[ITEM_NBR];
+                             u32* test_inputs_ptr = (u32*)test_inputs;
+  cerr << setw(22) << "    test inputs at "     << hex << test_inputs_ptr;
+  pp = &test_inputs_ptr;
+  fprintf(stderr," <-(%p)\n",pp);
 
-  /* ai+8*/                 u32 dut_outputs[ITEM_NBR];
-                            u32* dut_outputs_ptr = (u32*)dut_outputs;
-  cout << setw(22) << "    dut outputs at "     << hex << dut_outputs_ptr   << endl;
+  /* ai+8*/                  u32 dut_outputs[ITEM_NBR];
+                             u32* dut_outputs_ptr = (u32*)dut_outputs;
+  cerr << setw(22) << "    dut outputs at "     << hex << dut_outputs_ptr;
+  pp = &dut_outputs_ptr;
+  fprintf(stderr," <-(%p)\n",pp);
 
-  /* ai,ai+1,ai+2...*/      u32 dcs[ITEM_NBR][MAX_LATENCY][DUMP_NBR]; // dft_collected_states
-                            u32* dcs_ptr = &(dcs[0][0][0]);
-  cout << setw(22) << "    dcs at "             << hex << dcs_ptr           << endl;
-                            u32 encoded_imgset[ITEM_NBR][(MAX_LATENCY-1)][SIZE][SIZE][CH_NBR];
-                            u32* imgset_ptr = &(encoded_imgset[0][0][0][0][0]);
-  cout << setw(22) << "    encoded imgset at "  << hex << imgset_ptr        << endl;
+  /* ai,ai+1,ai+2...*/       u32 dcs[ITEM_NBR][MAX_LATENCY][DUMP_NBR]; // dft_collected_states
+                             u32* dcs_ptr = &(dcs[0][0][0]);
+  cerr << setw(22) << "    dcs at "             << hex << dcs_ptr;
+  pp = &dcs_ptr;
+  fprintf(stderr," <-(%p)\n",pp);
+                             u32 encoded_imgset[ITEM_NBR][(MAX_LATENCY-1)][SIZE][SIZE][CH_NBR];
+                             u32* imgset_ptr = &(encoded_imgset[0][0][0][0][0]);
+  cerr << setw(22) << "    encoded imgset at "  << hex << imgset_ptr;
+  pp = &imgset_ptr;
+  fprintf(stderr," <-(%p)\n",pp);
 
-  /* pwr0i,pwr1i,pwr2i...*/ float final_results[ITEM_NBR][MAX_LATENCY-1];
-                            float* final_results_ptr = &(final_results[0][0]);
-  cout << setw(22) << "    final results at "   << hex << final_results_ptr << endl;
+  /* pwr0i,pwr1i,pwr2i...*/  float final_results[ITEM_NBR][MAX_LATENCY-1];
+                             float* final_results_ptr = &(final_results[0][0]);
+                             float final_results_before[ITEM_NBR][MAX_LATENCY-1];
+  cerr << setw(22) << "    final results at "   << hex << final_results_ptr;
+  ff = &final_results_ptr;
+  fprintf(stderr," <-(%p)\n",ff);
 
   int null = 0;
   null  = null || test_inputs_ptr == nullptr;
@@ -462,45 +625,59 @@ int main()
   null  = null || imgset_ptr == nullptr;
   null  = null || final_results_ptr == nullptr;
   if (null) {
-    cout << "[ERROR] Data structure initializaion faild! (nullptr)" << endl;
+    cerr << "[ERROR] Data structure initializaion faild! (nullptr)" << endl;
     return -1;
   }  
   int IMG_SIZE = SIZE*SIZE*CH_NBR;
-  cout << "Data structure initialized." << endl;
-  cout << "Initializing inputs......\n";
+  cerr << "Data structure initialized." << endl;
+  cerr << "Initializing inputs......\n";
+
   int i = 0; // index for test items
+  int j = 0; // index for cycles
+  int k = 0; // index for dumps
+
   for (i = 0; i < ITEM_NBR; i++)
     if(RANDOM_TEST)
       test_inputs[i] = rand();
     else
       test_inputs[i] = test_inputgen(i);
   if (ITEM_NBR < 20) {
-    cout << "[ ";
+    cerr << "[ ";
     for(i = 0;i<ITEM_NBR;i++)
-      cout << hex << test_inputs[i] << " ";
-    cout << "]" << endl;
+      cerr << hex << test_inputs[i] << " ";
+    cerr << "]" << endl;
   }
-      
-  cout << "Inputs initialized.\nInitializing test harness......";
-
+  cerr << "Inputs initialized.\nInitializing outputs......";
+  int empty_value = 9.99;
+  for (i = 0; i < ITEM_NBR; i++)
+    for (j = 0; j < MAX_LATENCY-1; j++) {
+      final_results[i][j] = empty_value;
+      final_results_before[i][j] = empty_value;
+  }
+  cerr << "Outputs initialized.\nInitializing test harness......";
   int all_passing = 1;
   int err_dft = 0;
   int err_dut = 0;
   int err_encode = 0;
   int err_chai = 0;
   i = 0;
-  cout << "Test harness initialized. Start testing." << endl;
-  cout << "--------------------------------------" << endl;
+  cerr << "Test harness initialized. Start testing." << endl;
+  cerr << "--------------------------------------" << endl;
   while (i < ITEM_NBR && all_passing) {
-    cout << "Test item " << i << " . " << endl;
+    cerr << "Test item " << i << " . " << endl;
     
     // input a number to the DUFT and get dcs
+    fprintf(stderr,"[DUFT] (main) DFT reading state : (I@{0x%x},O@{0x%x})\n",test_inputs_ptr,dcs_ptr);
     err_dft = call_dft(*test_inputs_ptr,dcs_ptr);
-    
+    cerr << "[DUFT] (main) DFT COMPLETE" << endl;
+
     // input a number to the DUT and get output
+    fprintf(stderr,"[DUFT] (main) DUT test : (I@{0x%x},O@{0x%x})\n",test_inputs_ptr,dut_outputs_ptr);
     err_dut = call_dut(*test_inputs_ptr,dut_outputs_ptr);
-    
+    cerr << "[DUFT] (main) DUT COMPLETE" << endl;
+
     // encode dcs into images
+    fprintf(stderr,"[ENCODE] (main) Encoding states : (I@{0x%x},O@{0x%x})\n",dcs_ptr,imgset_ptr);
     err_encode = 
     DnnWrapper(
                 #if __CONV_ENABLE__==1
@@ -537,32 +714,37 @@ int main()
                 #endif//DECONV kernel
                         0,
     ENCODE,0,0,0,dcs_ptr,imgset_ptr,0);
+    cerr << "[ENCODE] (main) Encode COMPLETE" << endl;
     // process these images
-
-    //-------------------------------------------------------------------------------
-    // CHaiDNN
-    //-------------------------------------------------------------------------------
-    int bound = 0;
-    u32* img_path1;
-    u32* img_path2;
-    float* dest;
-    if ((MAX_LATENCY-1)%2)
-      bound = MAX_LATENCY-2; // odd number of images
-    else
-      bound = MAX_LATENCY-1; // even number of images
-    int group_id = 0;
-    while (2*group_id < bound && !err_chai) {
-      cerr << "___________________________________________________" << endl;
-      img_path1 = imgset_ptr + group_id * 2 * IMG_SIZE;
-      img_path2 = img_path1 + IMG_SIZE;
-      cerr << 2*group_id << "," << 2*group_id + 1 << " of total " << MAX_LATENCY-1 << " images " << endl;
-      cerr << "Image at " << hex << img_path1 << " " << hex << img_path2 << endl;
-      dest = final_results_ptr + group_id * 2;
-      cerr << "Result at " << hex << dest << endl;
-      err_chai = dataproc_chai(dirpath,prototxt,caffemodel,img_path1,img_path2,dest);
-      group_id ++;
-      cerr << endl;
-    }
+    #ifndef DUFT_ONLY
+      //-------------------------------------------------------------------------------
+      // CHaiDNN
+      //-------------------------------------------------------------------------------
+      int bound = 0;
+      u32* img_path1;
+      u32* img_path2;
+      float* dest;
+      if ((MAX_LATENCY-1)%2)
+        bound = MAX_LATENCY-2; // odd number of images
+      else
+        bound = MAX_LATENCY-1; // even number of images
+      #ifdef USER_DEBUG        // debug mode
+        bound = 2;
+      #endif
+      int group_id = 0;
+      while (2*group_id < bound && !err_chai) {
+        cerr << "----------------------------------------------------------" << endl;
+        img_path1 = imgset_ptr + group_id * 2 * IMG_SIZE;
+        img_path2 = img_path1 + IMG_SIZE;
+        cerr << 2*group_id + 1 << "," << 2*group_id + 2 << " of total " << MAX_LATENCY-1 << " images " << endl;
+        cerr << "Image at " << hex << img_path1 << " " << hex << img_path2 << endl;
+        dest = final_results_ptr + group_id * 2;
+        cerr << "Result at " << hex << dest << endl;
+        err_chai = dataproc_chai(dirpath,prototxt,caffemodel,img_path1,img_path2,dest);
+        group_id ++;
+        cerr << endl;
+      }
+    #endif
     // update testsource status
     all_passing = !err_dft && !err_dut && !err_chai && !err_encode;       
     printf(" %s\n",all_passing ? "[NO ERROR]\0" : "[ERROR]\0");
@@ -588,22 +770,21 @@ int main()
 
 
   //print results
-  int j = 0; // index for cycles
-  int k = 0; // index for dumps
+  
   for (i = 0; i < tested_items; i++) {
     printf("--------------------------------------\nTest item %d\n",i);
     printf("Data input and output : %0x => %0x\n",test_inputs[i],dut_outputs[i]);
+    printf("Result Buffer before execution :");
+    for (j = 0; j < MAX_LATENCY-1; j++) {
+      printf("%7.6f ",final_results_before[i][j]);
+    }
+    printf("\n");
     printf("Analysed results :");
     for (j = 0; j < MAX_LATENCY-1; j++) {
-      printf("%5.2f ",final_results[i][j]);
+      printf("%7.6f ",final_results[i][j]);
     }
     printf("\n");
   }
   printf("--------------------------------------\n");
-
-
-
-
-
   return 1 - all_passing;
 }

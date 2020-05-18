@@ -4,6 +4,10 @@ set part_name "xczu9eg-ffvb1156-2-e"
 set project_name "zcu102"
 
 open_project -reset $project_name
+#open_project  $project_name
+
+set DEBUG ""
+#set DEBUG "-DUSER_DEBUG"  
 
 # includes
 set IDIRS "\
@@ -54,44 +58,44 @@ set CSTD "-std=c++0x"
 # Set the top-level function to be DnnWrapper from "design/wrapper/dnn_wrapper.cpp" 
 set_top DnnWrapper
 
-add_files -tb ../software/bufmgmt/xi_buf_mgmt.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/bufmgmt/xi_buf_mgmt.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/checkers/checkers.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/checkers/checkers.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/common/xi_kernels.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/common/xi_kernels.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/common/kernelinfo_class.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/common/kernelinfo_class.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/custom/custom_class.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/custom/custom_class.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/imageread/xi_input_image.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/imageread/xi_input_image.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/include/xchange_structs.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/include/xchange_structs.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/init/xi_init.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/init/xi_init.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/interface/xi_interface.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/interface/xi_interface.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/interface/xi_readwrite_util.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/interface/xi_readwrite_util.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/scheduler/xi_perf_eval.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/scheduler/xi_perf_eval.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/scheduler/xi_scheduler.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/scheduler/xi_scheduler.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/scheduler/xi_thread_routines.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/scheduler/xi_thread_routines.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
-add_files -tb ../software/scheduler/xi_utils.cpp -cflags "$CSTD $IDIRS" 
+add_files -tb ../software/scheduler/xi_utils.cpp -cflags "$CSTD $IDIRS $DEBUG" 
 
 
 
 set files [glob -directory "../software/swkernels" "*.cpp"]
 foreach file $files {
-add_files -tb $file -cflags "$CSTD $IDIRS" 
+add_files -tb $file -cflags "$CSTD $IDIRS $DEBUG" 
 }
 
 set files [glob -directory "../software/xtract" "*.cpp" "*.proto"]
 foreach file $files {
-add_files -tb $file -cflags "$CSTD $IDIRS" 
+add_files -tb $file -cflags "$CSTD $IDIRS $DEBUG" 
 }
 
 add_files -tb ../software/xtract/caffe.pb.cc -cflags "$CSTD $IDIRS" 
@@ -113,7 +117,6 @@ lappend DUFT "../src/top/top.c"
 lappend DUFT "../src/beh/DUFT_ap_ctrl_chain.c"
 lappend DUFT "../src/beh/DUT.c"
 lappend DUFT "../src/encoder/encoder.c"
-lappend DUFT "../src/dataproc/dataproc.c"
 lappend DUFT "../src/test/directed_test.c"
 
 for {set i 0} {$i < [llength $DUFT]} {incr i} {
@@ -123,18 +126,18 @@ for {set i 0} {$i < [llength $DUFT]} {incr i} {
 add_files -blackbox ../src/blackbox/DUFT_bkb.json
 
 # SPECIFY MODEL TO TEST HERE
-add_files -tb "../software/app/main.cpp" -cflags "$CSTD $IDIRS" 
-add_files -tb "../software/app/app_chai.cpp" -cflags "$CSTD $IDIRS" 
+add_files -tb "../software/app/main.cpp" -cflags "$CSTD $IDIRS $DEBUG" 
+add_files -tb "../software/app/app_chai.cpp" -cflags "$CSTD $IDIRS $DEBUG" 
 
 open_solution "solution2"
 set_part $part_name
 
 create_clock -period 10
 
-csim_design -ldflags "$LLIBS --verbose"
+csim_design -ldflags "$LLIBS --verbose -O0"
 
 csynth_design 
 
-#cosim_design -ldflags $LLIBS -trace_level port
+cosim_design -ldflags "$LLIBS -O0" -trace_level all
 
 exit

@@ -213,10 +213,10 @@ typedef ap_uint<64> inputtype ;
 #define XI_INPUTPACKCOUNT_LOG2		2
 #if XI_IO_64bit_PORT_EN
 typedef ap_uint<64> inputtype2 ;
-#define XI_INPUTPACKCOUNT2_LOG2		3 - LOG2_NUM_PORT_IO
+#define XI_INPUTPACKCOUNT2_LOG2		(3 - LOG2_NUM_PORT_IO)
 #else
 typedef ap_uint<128> inputtype2 ;
-#define XI_INPUTPACKCOUNT2_LOG2		4 - LOG2_NUM_PORT_IO
+#define XI_INPUTPACKCOUNT2_LOG2		(4 - LOG2_NUM_PORT_IO)
 #endif
 
 #if XI_KER_PROC ==8
@@ -240,10 +240,10 @@ typedef ap_uint<64> biastype ;
 #define XI_BIASPACKCOUNT_LOG2		2
 #if XI_IO_64bit_PORT_EN
 typedef ap_uint<64> outtype ;
-#define XI_OUTPUTPACKCOUNT_LOG2		3 - LOG2_NUM_PORT_IO
+#define XI_OUTPUTPACKCOUNT_LOG2		(3 - LOG2_NUM_PORT_IO)
 #else
 typedef ap_uint<128> outtype ;
-#define XI_OUTPUTPACKCOUNT_LOG2		4 - LOG2_NUM_PORT_IO
+#define XI_OUTPUTPACKCOUNT_LOG2		(4 - LOG2_NUM_PORT_IO)
 #endif
 /*
 #ifdef __HLS_SYN__
@@ -284,15 +284,15 @@ int XiConvolutionTop(				gmem_weighttype *weights1,
 #endif
 
 #if 1
-#define XI_IN_H 227 //layer1
-#define XI_IN_W 227 //layer1
-#define XI_OUT_H 55 //layer1
-#define XI_OUT_W 55 //layer1
-#define XI_NUM_KERNELS 96
-#define XI_FILTER_SIZE 11
-#define XI_CONV_STRIDE 4
+#define XI_IN_H 6 //layer1
+#define XI_IN_W 6 //layer1
+#define XI_OUT_H 4 //layer1
+#define XI_OUT_W 4 //layer1
+#define XI_NUM_KERNELS 6
+#define XI_FILTER_SIZE 3
+#define XI_CONV_STRIDE 1
 #define XI_POOL_STRIDE 2
-#define XI_POOL_SIZE 3
+#define XI_POOL_SIZE 2
 #define XI_INPUT_PLANES 4
 #define XI_NKPF 8//4
 #define XI_PAD 0

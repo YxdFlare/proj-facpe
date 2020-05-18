@@ -103,35 +103,112 @@ int casttoBuffptr(void* img_path, IO_DATA_TYPE *buff_ptr, int height, int width,
 	if(img_channel == 3)
     frame = (unsigned int*)img_path;
   else {
-    std :: cout << "[ERROR] Only support image with 3 channels - But img_channel is set to" << img_channel << std :: endl;
+    std :: cerr << "[ERROR] Only support image with 3 channels - But img_channel is set to" << img_channel << std :: endl;
     return -1;
   }
 	if(frame == nullptr)
 	{
-		std :: cout << "[ERROR] Image read failed - " << std :: endl;
+		std :: cerr << "[ERROR] Image read failed - " << std :: endl;
 		return -1;
 	}
 	else
 	{
-		std :: cout << "[IMRDx] Image read at : " << hex << frame << std :: endl;
+		std :: cerr << "[IMRDx] Image read at : " << hex << frame << std :: endl;
 	}
 
-	int input_index=0;
-	for (int h = 0; h < height; ++h)
-	{
-		for (int w = 0; w < width; ++w)
-		{
-			for (int ch = 0; ch < img_channel; ++ch)
-			{
-        if (frame[input_index])
-				  buff_ptr[input_index] = 1;
-        else
-          buff_ptr[input_index] = 0;
-				input_index++;
-			}// Channels
-		}// Image width
-	}// Image Height
+  // loop count variables  
+  int h = 0;
+  int w = 0;
+  int ch = 0;
+  int pix_idx = 0;
 
+  #ifdef DEBUG
+    // print read image
+    for ( h = 0; h < height; ++h) {   
+      fprintf(stderr,"\t"); 
+      for ( w = 0; w < width; ++w) {
+        fprintf(stderr,"(");
+        for ( ch = 0; ch < img_channel; ++ch) {
+          fprintf(stderr,"%i",frame[pix_idx]);
+          pix_idx++;
+        }
+        fprintf(stderr,")  ");
+      }
+      fprintf(stderr,"\n");
+    }
+  #endif
+
+  // convert frame to unsigned char
+  unsigned char ucframe[height*width*img_channel];
+  pix_idx = 0;
+  for ( h = 0; h < height; ++h)
+    for ( w = 0; w < width; ++w)
+      for ( ch = 0; ch < img_channel; ++ch) {
+        pix_idx = ch + w * img_channel + h * width * img_channel;
+        if (frame[pix_idx])
+          ucframe[pix_idx] = 1;
+        else
+          ucframe[pix_idx] = 0;
+  }
+
+  // swap dimension from HWC to CHW (or not)
+  // with dynamic fixed quantization
+  int HWC_idx;
+  int CHW_idx;
+  unsigned char pixel;
+  IO_DATA_TYPE fxval;
+  for ( h = 0; h < height; ++h) {
+    for ( w = 0; w < width; ++w) {
+      for ( ch = 0; ch < img_channel; ++ch) {
+        HWC_idx = ch + w * img_channel + h * width * img_channel;
+        //CHW_idx = w + h * width + ch * width * height;
+        CHW_idx = HWC_idx;
+        pixel = ucframe[HWC_idx];
+        fxval = pixel << fbits_input;
+        buff_ptr[CHW_idx] = fxval;
+      }
+    }
+  } 
+	#ifdef USER_DEBUG
+    // int input_index = 0;
+    // //dynamic fixed quantization
+    // for ( h = 0; h < height; ++h) {
+    //   const unsigned char* ptr = ucframe_chw + h * width * img_channel;//data;
+    //   int img_index = 0;
+    //   for ( w = 0; w < width; ++w) {
+    //     for ( ch = 0; ch < img_channel; ++ch) {
+    //       unsigned char pixel;
+    //       pixel = ptr[img_index++];
+    //       float float_mean = 0;
+    //       short pixel1 = (short)pixel << 0;
+    //       if(pixel1 > max_positive)
+    //         fxval = max_positive;
+    //       else if(pixel1 < max_negative)
+    //         fxval = max_negative;
+    //       else
+    //         fxval = pixel1;
+    //       buff_ptr[input_index] = fxval;
+    //       input_index++;
+    //     }// Channels
+    //   }// Image width
+    // }// Image Height
+
+    // print converted image
+    pix_idx = 0;
+    fprintf(stderr,"[IMRDx] Image converted to IO_DATATYPE at : %p\n" ,buff_ptr);
+    for ( h = 0; h < height; ++h) {   
+      fprintf(stderr,"\t"); 
+      for ( w = 0; w < width; ++w) {
+        fprintf(stderr,"(");
+        for ( ch = 0; ch < img_channel; ++ch) {
+          pix_idx = w + h * width + ch * width * height;
+          fprintf(stderr,"%i",buff_ptr[pix_idx]);
+        }
+        fprintf(stderr,")  ");
+      }
+      fprintf(stderr,"\n");
+    }
+  #endif
 	return 0;
 }
 
@@ -594,8 +671,9 @@ int loadMeanSubtractedDatafromBuffptr(std::vector<void *> normalizeInput, IO_DAT
 			//for (int w = 0; w < width; ++w)
 			for (int w = 0; w < align_width; ++w)
 			{
-				//TODO : Generic for 4
+				//TODO : Generic for 4  // IT IS HERE!
 				for (int c = 0; c < 4; ++c)
+        //for (int c = 0; c < img_channel; ++c)
 				{
 
 					for(int batch_id1 = 0; batch_id1 < batch_cnt1; batch_id1++)
@@ -636,25 +714,16 @@ int loadMeanSubtractedDatafromBuffptr(std::vector<void *> normalizeInput, IO_DAT
 //loadDatafromBuffptr
 
 //# Input Read
-int inputNormalization(std::vector<void *>input, int resize_h, int resize_w, 
-					unsigned int *img_path1, unsigned int *img_path2, int inp_mode, 
-					float *mean_ptr, float *var_ptr,
-					int numImg_to_process, io_layer_info io_layer_info_ptr)
+int input_u32(std::vector<void *>input,
+          unsigned int *img_path1, unsigned int *img_path2, 
+          int numImg_to_process, io_layer_info io_layer_info_ptr)
 {
 
-	//# use for Pixel wise mean subtraction
-	//# Currently support is disabled
-	char *mean_path;
-	
 	//# Load input layer params
 	int inp_height  = io_layer_info_ptr.in_height;
 	int inp_width   = io_layer_info_ptr.in_width;
-	int inp_bw      = io_layer_info_ptr.in_bw;
 	int inp_fbits   = io_layer_info_ptr.in_fbits;
 	int inp_channel = io_layer_info_ptr.in_channel;
-	int inp_depth   = io_layer_info_ptr.in_depth;
-	float th_in		= io_layer_info_ptr.th_in;
-	int quant_scheme_flag = io_layer_info_ptr.quant_scheme_flag;
 
 	int en_batch_size_one;
 
@@ -663,34 +732,18 @@ int inputNormalization(std::vector<void *>input, int resize_h, int resize_w,
 	else
 		en_batch_size_one = 1;
 
-	int normalize_enable=inp_mode;
 	int status;
-
-	if((resize_h < inp_height) || (resize_w < inp_width))
-	{
-		fprintf(stderr,"[ERROR] invalid resize params\n");
-		return -1;
-	}
-
 	int batch_loop_cnt;
 	if(en_batch_size_one)
 		batch_loop_cnt = 1;
 	else
 		batch_loop_cnt = XBATCH_SIZE;
 
-  if(inp_mode==3)
-  {
-    for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++)
-    {
-      if (batch_id == 0)
-      {
-        status = casttoBuffptr((void*)img_path1, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel,inp_fbits);
-      }
-      else
-      {
-        status = casttoBuffptr((void*)img_path2, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel,inp_fbits);
-      }
-    }
+  for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++) {
+    if (batch_id == 0)
+      status = casttoBuffptr((void*)img_path1, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel,inp_fbits);
+    else
+      status = casttoBuffptr((void*)img_path2, (IO_DATA_TYPE *)input[batch_id], inp_height, inp_width, inp_channel,inp_fbits);
   }	
 
 	return status;
@@ -817,67 +870,72 @@ int outputUnpack(void* output, std::vector<void *> output_unpack, kernel_type_e 
 		batch_loop_cnt = XBATCH_SIZE;
 
 	//# For Classification Networks
-	if(kernType == SOFTMAX)
-	{
+    if(kernType == SOFTMAX)
+    {
 
-		for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++)
-		{
-			float *output_unpack_ptr = (float*)output_unpack[batch_id];
-			float *output_ptr	= (float*)output;
+      for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++)
+      {
+        float *output_unpack_ptr = (float*)output_unpack[batch_id];
+        float *output_ptr	= (float*)output;
 
-			output_ptr += batch_id;
-			for(int i=0;i<outputSize;i++)
-			{
-				output_unpack_ptr[i] = output_ptr[i*XBATCH_SIZE];
-			}
-		}
+        output_ptr += batch_id;
+        for(int i=0;i<outputSize;i++)
+        {
+          output_unpack_ptr[i] = output_ptr[i*XBATCH_SIZE];
+        }
+      }
 
-	}
+    }
 
 	//# For Detection Networks
-	else if (kernType == NMS)
-	{
-		float *output_ptr	= (float*)output;
-		for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++)
-		{
-			float *output_unpack_ptr = (float*)output_unpack[batch_id];
-			int BoxCount = output_ptr[0];
-			//memcpy((int*)output_unpack_ptr, &BoxCount, sizeof(int));
-			memcpy((float*)(output_unpack_ptr), (float*)(output_ptr), (BoxCount*7+1)*sizeof(float));
-			output_ptr += BoxCount*7+1;
-		}
-	}
+    else if (kernType == NMS)
+    {
+      float *output_ptr	= (float*)output;
+      for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++)
+      {
+        float *output_unpack_ptr = (float*)output_unpack[batch_id];
+        int BoxCount = output_ptr[0];
+        //memcpy((int*)output_unpack_ptr, &BoxCount, sizeof(int));
+        memcpy((float*)(output_unpack_ptr), (float*)(output_ptr), (BoxCount*7+1)*sizeof(float));
+        output_ptr += BoxCount*7+1;
+      }
+    }
 
 	//# For Segmentation Networks
-	else if (kernType == CROP)
-	{
-		int *output_ptr	= (int*)output;
-		for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++)
-		{
-			int *output_unpack_ptr = (int*)output_unpack[batch_id];
-			memcpy((int*)output_unpack_ptr, output_ptr, outputSize*sizeof(int));
-			output_ptr += (outputSize);
-		}
-	}
+    else if (kernType == CROP)
+    {
+      int *output_ptr	= (int*)output;
+      for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++)
+      {
+        int *output_unpack_ptr = (int*)output_unpack[batch_id];
+        memcpy((int*)output_unpack_ptr, output_ptr, outputSize*sizeof(int));
+        output_ptr += (outputSize);
+      }
+    }
 
   //# For others, just copy the data
-	else
-	{
-		for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++)
-		{
-			float *output_unpack_ptr = (float*)output_unpack[batch_id];
-			float *output_ptr	= (float*)output;
-			output_ptr += batch_id;
-			for(int i=0;i<outputSize;i++)
-			{
-				output_unpack_ptr[i] = output_ptr[i*XBATCH_SIZE];
-        cout << "Output Unpack  ("; 
-        cout << batch_id << "," << i << "): {";
-        cout << hex << output_ptr + i*XBATCH_SIZE << "\\" << output_ptr[i*XBATCH_SIZE];
-        cout << "\\ => " << hex <<output_unpack_ptr + i << "}" << endl;
-			}
-		}
-	}
+    else
+    {
+      float before;
+      float after;
+      int after_raw;
+      for(int batch_id = 0; batch_id < batch_loop_cnt; batch_id++)
+      {
+        float *output_unpack_ptr = (float*)output_unpack[batch_id];
+        float *output_ptr	= (float*)output;
+        output_ptr += batch_id;
+        for(int i=0;i<outputSize;i++)
+        {
+          before = output_unpack_ptr[i];
+          after = output_ptr[i*XBATCH_SIZE];
+          after_raw = *(int*)(output_ptr + i*XBATCH_SIZE);
+          output_unpack_ptr[i] = after;
+          fprintf(stderr,"[CHAI] Output Unpack : (%5.2f)@{0x%x} <= (%5.2f)@{0x%x}\n",before,output_unpack_ptr,after,output_ptr);
+          fprintf(stderr,"[CHAI] Output Raw Data : 0x%x\n",after_raw);
+        }
+      }
+    }
+  return 0;
 }
 
 
@@ -898,6 +956,56 @@ void xiInputRead(std::vector<void *> normalizeInput, vector<void *> input, int n
 	int inp_channel = io_layer_info_ptr.in_channel;
 
 	loadMeanSubtractedDatafromBuffptr(normalizeInput, (IO_DATA_TYPE *)input[0], inp_height, inp_width, inp_channel, en_batch_size_one);
+  
+  int b = 0;
+  int h = 0;
+  int w = 0;
+  int ch = 0;
+  int pix_idx = 0;
+  IO_DATA_TYPE * ptr;
+  #ifdef USER_DEBUG
+    // print read image
+    fprintf(stderr,"[INPRDx] Image read from memory at : %p\n" ,normalizeInput[0]);  
+    for(b = 0; b < numImg_to_process; ++b) {
+      pix_idx = 0;
+      ptr = (IO_DATA_TYPE *)normalizeInput[b];
+      fprintf(stderr,"\tImage%i at %p\n" ,b,normalizeInput[b]);
+      for ( h = 0; h < inp_height; ++h) {   
+        fprintf(stderr,"\t\t"); 
+        for ( w = 0; w < inp_width; ++w) {
+          fprintf(stderr,"(");
+          for ( ch = 0; ch < inp_channel; ++ch) {
+            fprintf(stderr,"%i",ptr[pix_idx]);
+            pix_idx ++;
+          }
+          fprintf(stderr,")  ");
+        }
+        fprintf(stderr,"\n");
+      }
+    }
+    
+    // print read image 
+    fprintf(stderr,"[INPRDx] Image load into buffer at : %p\n" ,input[0]);  
+    ptr = (IO_DATA_TYPE *)input[0];
+    pix_idx = 0;
+    int x0,x1,x2,x3;
+    for(x0=0;x0<inp_height;x0++) {
+      fprintf(stderr,"\t\t");
+      for(x1=0;x1<inp_width;x1++) {
+        for(x2=0;x2<4;x2++) {
+          fprintf(stderr,"[");
+          for(x3=0;x3<numImg_to_process;x3++) {
+            fprintf(stderr,"%i",ptr[pix_idx]);
+            pix_idx++;
+          }
+          fprintf(stderr,"]");
+        }
+        fprintf(stderr,"\t");
+      }
+      fprintf(stderr,"\n");
+    }
+  #endif
+    
 }
 
 //# Output Write

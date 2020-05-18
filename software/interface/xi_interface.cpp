@@ -76,31 +76,44 @@ void *xiInit(char *dirpath,  char* prototxt,  char* caffemodel,
 
 	//# Graph 
 	XGraph* graph = ParseCaffeNetwork(deploy_path, model_path, start_layer, end_layer, dirpath);//"", "pool5");
+  std::cerr << "[INFOx] Model Parsed" << std::endl;
 	//graph->setResizeShape(resize_h, resize_w);
 
 	map < string, XLayer* >::iterator it_layer=graph->layers.begin();
 	string quant_schem = it_layer->second->quantization_scheme;
 	kernelInfo opt_descriptor(quant_schem);
-	// std::cout << "[INFOx] Graph generated"  << std::endl;
-	// std::cout << "[INFOx] Generating JobQueue" << std::endl;
+	// std::cerr << "[INFOx] Graph generated"  << std::endl;
+	// std::cerr << "[INFOx] Generating JobQueue" << std::endl;
 
 	vector <XlayerData> xlayer_seq;
 	xlayer_sequence_generator(xlayer_seq, graph,opt_descriptor, layer1_or_not);
 	//xlayer_print(xlayer_seq);
 
-	// std::cout << "[INFOx] JobQueue generated"  << std::endl;
-	// std::cout << "[INFOx] Creating Memory" << std::endl;
+	// std::cerr << "[INFOx] JobQueue generated"  << std::endl;
+	// std::cerr << "[INFOx] Creating Memory" << std::endl;
 	//graph->drawGraph("/tmp/optimized_graph.dot");
 	//# Call buffer management block
 	xiBuffCreate(xlayer_seq, chaihandle_info->JobQueue, chaihandle_info->ptrsList);
 
 	//bufMgmt_print(xlayer_seq, chaihandle_info->JobQueue);
 
-	std::cout << "[INFOx] Memory created" << std::endl;
+	std::cerr << "[INFOx] Memory created" << std::endl;
+  
+  // print created buffers
+  #ifdef USER_DEBUG
+    fprintf(stderr,"[INFOx] HW Buffers List:\n");
+    for (int i = 0; i < chaihandle_info->ptrsList.hwBufs.size(); i++) {
+        fprintf(stderr,"\t%p\n",chaihandle_info->ptrsList.hwBufs[i]);
+    }
 
-	// std :: cout << "[INFOx] Network Path : " << dirpath << std :: endl;
+    fprintf(stderr,"[INFOx] SW Buffers List:\n");
+    for (int i = 0; i < chaihandle_info->ptrsList.swBufs.size(); i++) {
+      fprintf(stderr,"\t%p\n",chaihandle_info->ptrsList.swBufs[i]);
+    }
+  #endif
+	// std :: cerr << "[INFOx] Network Path : " << dirpath << std :: endl;
 
-	std::cout << "[INFOx] Init Start : This may take a while ...";
+	std::cerr << "[INFOx] Init Start : This may take a while ...";
 
 	//# xChange Init
 	initXChangeHost(dirpath, xlayer_seq, chaihandle_info->JobQueue, en_batch_size_one);
@@ -144,8 +157,13 @@ void *xiInit(char *dirpath,  char* prototxt,  char* caffemodel,
 	io_layer_info_ptr->out_kerType = chaihandle_info->JobQueue[0][lastLayerIdx].kernType;
 	io_layer_info_ptr->out_size = chaihandle_info->JobQueue[0][lastLayerIdx].output_size;
 
-	std::cout << "\n[INFOx] Init Done" << std::endl;
-
+	std::cerr << "\n[INFOx] Init Done" << std::endl;
+  #ifdef USER_DEBUG
+    std::cerr << "[INFOx] Queue :" << std::endl;
+    for (int i = 0; i < totalLayers; i++) {
+      std::cerr << "\t" << hex << chaihandle_info->JobQueue[0][i].in_ptrs[0] << " --> " << hex << chaihandle_info->JobQueue[0][i].out_ptrs[0] << std::endl;
+    }
+  #endif 
 	return (void*)chaihandle_info;
 }
 

@@ -121,9 +121,12 @@ limitations under the License.
 
 //#define POOL_KERNEL_EXIST 0
 //#define MERGED_FC_KERNEL_EXIST 0
+
 //# Set to 0 for Caffe ref / Set to 1 for HLS ref comparison
-#define PACKED_INOUT 0
+#define PACKED_INOUT 1
+
 #define FILE_WRITE 	 0
+
 
 //# I/O data type - For 8bit specify 8 / For 16bit specify 16
 #define IO_TYPE  8

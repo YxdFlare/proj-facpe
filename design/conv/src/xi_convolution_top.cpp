@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ----------------------------------------------------*/
 
-#include "/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/Vivado/2018.2/include/gmp.h"
-#include "/opt/xilinx/Xilinx_SDx_2018.2_0614_1954/Vivado/2018.2/include/mpfr.h"
+#include "/opt/xilinx/Xilinx_Vivado_vitis_2019.2/Vivado/2019.2/include/gmp.h"
+#include "/opt/xilinx/Xilinx_Vivado_vitis_2019.2/Vivado/2019.2/include/mpfr.h"
 
 #include "../include/xi_conv_config.h"
 #include "../include/xi_conv_desc.h"
@@ -62,45 +62,7 @@ int XiConvolutionTop(
 ) {
 	bool ap_clk_div2 = 0;
 //#endif
-
-#ifndef __SDSOC
-#pragma HLS interface m_axi port=weights1 		offset=slave bundle=gmem0 depth=9
-#pragma HLS interface m_axi port=weights2 		offset=slave bundle=gmem1 depth=9
-#if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
-#pragma HLS interface m_axi port=weights3 		offset=slave bundle=gmem2 depth=9
-#pragma HLS interface m_axi port=weights4 		offset=slave bundle=gmem3 depth=9
-#endif
-#pragma HLS interface m_axi port=output1 		offset=slave bundle=gmem4 depth=57600
-#pragma HLS interface m_axi port=output2 		offset=slave bundle=gmem5 depth=57600
-#pragma HLS interface m_axi port=input_other1 	offset=slave bundle=gmem6 depth=4
-#pragma HLS interface m_axi port=input_other2 	offset=slave bundle=gmem7 depth=4
-#pragma HLS interface m_axi port=input_1st 		offset=slave bundle=gmem8 depth=230400
-#pragma HLS interface m_axi port=bias 			offset=slave bundle=gmem9 depth=2
-#pragma HLS interface m_axi port=inp_norm_2 	offset=slave bundle=gmem10 depth=4
-#pragma HLS interface m_axi port=inp_norm_3 	offset=slave bundle=gmem11 depth=4
-#pragma HLS interface m_axi port=istg_out1 		offset=slave bundle=gmem12 depth=4
-#pragma HLS interface m_axi port=istg_out2 		offset=slave bundle=gmem13 depth=4
-#pragma HLS interface m_axi port=scalar_conv_args offset=slave bundle=gmem14 depth=100
-
-#pragma HLS interface s_axilite port=weights1 bundle=control
-#pragma HLS interface s_axilite port=weights2 bundle=control
-#if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
-#pragma HLS interface s_axilite port=weights3 bundle=control
-#pragma HLS interface s_axilite port=weights4 bundle=control
-#endif
-#pragma HLS interface s_axilite port=output1 bundle=control
-#pragma HLS interface s_axilite port=output2 bundle=control
-#pragma HLS interface s_axilite port=input_other1 bundle=control
-#pragma HLS interface s_axilite port=input_other2 bundle=control
-#pragma HLS interface s_axilite port=input_1st bundle=control
-#pragma HLS interface s_axilite port=bias bundle=control
-#pragma HLS interface s_axilite port=scalar_conv_args bundle=control
-#pragma HLS interface s_axilite port=inp_norm_2 bundle=control
-#pragma HLS interface s_axilite port=inp_norm_3 bundle=control
-#pragma HLS interface s_axilite port=istg_out1 bundle=control
-#pragma HLS interface s_axilite port=istg_out2 bundle=control
-#pragma HLS interface s_axilite port=return bundle=control
-#else // Added pragmas for HLS synthesis
+// Added pragmas for HLS synthesis
 #pragma HLS interface ap_bus port=weights1 		depth=500
 #pragma HLS interface ap_bus port=weights2 		depth=500
 #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
@@ -118,7 +80,24 @@ int XiConvolutionTop(
 #pragma HLS interface ap_bus port=istg_out1 		depth=1200
 #pragma HLS interface ap_bus port=istg_out2 		depth=1200
 #pragma HLS interface ap_bus port=scalar_conv_args 	depth=128
-#endif 
+
+// #pragma HLS interface ap_bus port=weights1 		
+// #pragma HLS interface ap_bus port=weights2 		
+// #if (XI_KER_PROC==16 || (XI_WTS_PORT_64BIT_EN==1 && XI_KER_PROC==8) )
+// #pragma HLS interface ap_bus port=weights3 		
+// #pragma HLS interface ap_bus port=weights4 		
+// #endif 
+// #pragma HLS interface ap_bus port=output1 		
+// #pragma HLS interface ap_bus port=output2 		
+// #pragma HLS interface ap_bus port=input_other1 	        
+// #pragma HLS interface ap_bus port=input_other2 		
+// #pragma HLS interface ap_bus port=input_1st 		
+// #pragma HLS interface ap_bus port=bias 			
+// #pragma HLS interface ap_bus port=inp_norm_2 		
+// #pragma HLS interface ap_bus port=inp_norm_3 		
+// #pragma HLS interface ap_bus port=istg_out1 		
+// #pragma HLS interface ap_bus port=istg_out2 		
+// #pragma HLS interface ap_bus port=scalar_conv_args 	
 
 	Convolution<XI_IN_W,XI_IN_H,XI_OUT_W,XI_OUT_H,XI_NUM_KERNELS,XI_FILTER_SIZE,XI_CONV_STRIDE,XI_POOL_STRIDE,XI_POOL_SIZE,XI_INPUT_PLANES,XI_NKPF>
 	(weights1,weights2,
